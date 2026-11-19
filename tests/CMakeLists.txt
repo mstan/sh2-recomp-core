@@ -22,3 +22,7 @@ add_test(NAME sh2_step COMMAND sh2_step_test)
 add_executable(sh7604_bsc_test sh7604_bsc_test.c)
 target_link_libraries(sh7604_bsc_test PRIVATE sh2-recomp-core::core)
 add_test(NAME sh7604_bsc COMMAND sh7604_bsc_test)
+
+add_executable(sh7604_system_test sh7604_system_test.c)
+target_link_libraries(sh7604_system_test PRIVATE sh2-recomp-core::core)
+add_test(NAME sh7604_system COMMAND sh7604_system_test)

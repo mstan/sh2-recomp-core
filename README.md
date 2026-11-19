@@ -19,6 +19,11 @@ advance it with SH-2 clock counts, consume refresh requests and apply memory
 effects. The component uses the register layout from section 7 of the
 [Hitachi SH7604 Hardware Manual](https://antime.kapsi.fi/sega/files/sh7604.pdf).
 
+`Sh7604System` handles the standby and cache control registers. The caller
+owns peripheral clock gating, cache storage, and the purge of valid entries
+and replacement state. The register layout and reset values follow sections
+8.2.1 and 14.2.1 of the [Renesas SH7604 Hardware Manual](https://www.renesas.com/ja/document/mah/superh-risc-engine-sh7604).
+
 ## Build
 
 ```sh
