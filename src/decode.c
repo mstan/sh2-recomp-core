@@ -6,7 +6,13 @@ typedef enum {
     RM_RN,
     TARGET_RM,
     DISP8,
-    DISP12
+    DISP12,
+    LITERAL_LONG,
+    RM_RN_DISP_LONG,
+    DISP_GBR_BYTE,
+    DISP_GBR_WORD,
+    IMM8_UNSIGNED,
+    IMM8_SIGNED
 } OperandFormat;
 
 typedef struct {
@@ -32,7 +38,20 @@ static const Encoding encodings[] = {
     {0xFF00, 0x8D00, SH2_OP_BT_S,       DISP8, true},
     {0xFF00, 0x8F00, SH2_OP_BF_S,       DISP8, true},
     {0xF0FF, 0x402B, SH2_OP_JMP,        TARGET_RM, true},
-    {0xF0FF, 0x400B, SH2_OP_JSR,        TARGET_RM, true}
+    {0xF0FF, 0x400B, SH2_OP_JSR,        TARGET_RM, true},
+    {0xF000, 0xD000, SH2_OP_MOV_L_PC,   LITERAL_LONG, false},
+    {0xF00F, 0x6006, SH2_OP_MOV_L_POSTINC, RM_RN, false},
+    {0xF000, 0x1000, SH2_OP_MOV_L_STORE_DISP, RM_RN_DISP_LONG, false},
+    {0xF00F, 0x2000, SH2_OP_MOV_B_STORE, RM_RN, false},
+    {0xF00F, 0x2001, SH2_OP_MOV_W_STORE, RM_RN, false},
+    {0xFF00, 0xC400, SH2_OP_MOV_B_LOAD_GBR, DISP_GBR_BYTE, false},
+    {0xFF00, 0xC100, SH2_OP_MOV_W_STORE_GBR, DISP_GBR_WORD, false},
+    {0xF0FF, 0x400E, SH2_OP_LDC_SR,     TARGET_RM, false},
+    {0xF0FF, 0x401E, SH2_OP_LDC_GBR,    TARGET_RM, false},
+    {0xF0FF, 0x402E, SH2_OP_LDC_VBR,    TARGET_RM, false},
+    {0xF00F, 0x3008, SH2_OP_SUB_REG,    RM_RN, false},
+    {0xFF00, 0xC800, SH2_OP_TST_IMM,    IMM8_UNSIGNED, false},
+    {0xFF00, 0x8800, SH2_OP_CMP_EQ_IMM, IMM8_SIGNED, false}
 };
 
 static int16_t sign_extend(uint16_t field, int32_t modulus)
@@ -69,6 +88,27 @@ Sh2Instruction sh2_decode(uint16_t word)
             break;
         case DISP12:
             decoded.displacement = (int16_t)(2 * sign_extend(word & 0xFFFu, 0x1000));
+            break;
+        case LITERAL_LONG:
+            decoded.rn = (uint8_t)((word >> 8) & 15u);
+            decoded.displacement = (int16_t)(4 * (word & 0xFFu));
+            break;
+        case RM_RN_DISP_LONG:
+            decoded.rn = (uint8_t)((word >> 8) & 15u);
+            decoded.rm = (uint8_t)((word >> 4) & 15u);
+            decoded.displacement = (int16_t)(4 * (word & 15u));
+            break;
+        case DISP_GBR_BYTE:
+            decoded.displacement = (int16_t)(word & 0xFFu);
+            break;
+        case DISP_GBR_WORD:
+            decoded.displacement = (int16_t)(2 * (word & 0xFFu));
+            break;
+        case IMM8_UNSIGNED:
+            decoded.immediate = (int16_t)(word & 0xFFu);
+            break;
+        case IMM8_SIGNED:
+            decoded.immediate = sign_extend(word & 0xFFu, 0x100);
             break;
         }
         break;

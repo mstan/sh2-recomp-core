@@ -20,7 +20,20 @@ typedef enum {
     SH2_OP_BF_S,
     SH2_OP_JMP,
     SH2_OP_JSR,
-    SH2_OP_RTS
+    SH2_OP_RTS,
+    SH2_OP_MOV_L_PC,
+    SH2_OP_MOV_L_POSTINC,
+    SH2_OP_MOV_L_STORE_DISP,
+    SH2_OP_MOV_B_STORE,
+    SH2_OP_MOV_W_STORE,
+    SH2_OP_MOV_B_LOAD_GBR,
+    SH2_OP_MOV_W_STORE_GBR,
+    SH2_OP_LDC_SR,
+    SH2_OP_LDC_GBR,
+    SH2_OP_LDC_VBR,
+    SH2_OP_SUB_REG,
+    SH2_OP_TST_IMM,
+    SH2_OP_CMP_EQ_IMM
 } Sh2Opcode;
 
 typedef struct {
@@ -33,8 +46,15 @@ typedef struct {
 } Sh2Instruction;
 
 /* Decode a host-order instruction word. Relative branches use a signed byte
- * displacement from the instruction address plus four. Unused fields are
+ * displacement from the instruction address plus four. Memory offsets are
+ * also expressed in bytes. Unused fields are
  * zero. UNSUPPORTED covers both unimplemented and unrecognized encodings. */
+#ifdef __cplusplus
+extern "C" {
+#endif
 Sh2Instruction sh2_decode(uint16_t word);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

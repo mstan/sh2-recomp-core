@@ -1,14 +1,18 @@
 # SH-2 recompilation core
 
-A platform-neutral C11 foundation for static SH-2 recompilation. The first
-library target decodes selected register, immediate, and control-flow
-instructions into typed operands. The decoder reports unsupported encodings
-explicitly. Instruction execution, interrupt handling, and native code
-generation are later milestones.
+A platform-neutral C11 core for static SH-2 recompilation. It implements
+power-on vector reads and a first instruction subset covering integer and
+control operations, selected memory transfers and delayed branches. Board
+consumers supply the bus, firmware and timeline. Each processor has its own
+state and callbacks.
 
-Board consumers own firmware, the memory map, devices, and scheduling. Both
-32X and Saturn can link the same library and supply their own board bindings
-as the execution interface is developed.
+The `sh2-aot` tool emits C operation functions from a big-endian image.
+Strict execution checks the current fetch word at the guest PC before
+calling a generated function. The separately linked interpreter shares the
+instruction semantics and can continue after a catalog miss. Decode misses,
+bus waits and faults are explicit results. Exception delivery, interrupt
+sequencing, on-chip devices and the remaining instruction semantics are
+further bring-up work.
 
 ## Build
 
@@ -18,7 +22,15 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure --timeout 0
 ```
 
-Consumers may add this repository with `add_subdirectory` and link
-`sh2-recomp-core::core`. Encoding and operand fixtures follow the
+Consumers can use `add_subdirectory` and link `sh2-recomp-core::core` for
+strict execution or `sh2-recomp-core::interpreter` for fallback.
+Run `sh2-aot input.bin catalog.c name [base]` with the host-built generator.
+The caller provides the guest addresses and links the emitted
+`sh2_catalog_name` from the generated source. Keep generated catalogs
+derived from owned guest inputs in the consumer's private build directory.
+
+The fixtures exercise power-on reset, delayed call and return, a retried
+store, signed loads, native and interpreter parity, and fallback on a
+changed fetch word. Instruction encodings and operands follow the
 [Renesas SH-1/SH-2/SH-DSP Software Manual](https://www.renesas.com/en/document/mas/sh-1sh-2sh-dsp-software-manual?r=1054686).
 See [LICENSE](LICENSE) for the project license.
