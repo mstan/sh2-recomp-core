@@ -1,0 +1,8 @@
+add_executable(sh2_decode_test decode_test.c)
+target_link_libraries(sh2_decode_test PRIVATE sh2-recomp-core::core)
+if(MSVC)
+    target_compile_options(sh2_decode_test PRIVATE /W4 /WX)
+else()
+    target_compile_options(sh2_decode_test PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME sh2_decode COMMAND sh2_decode_test)
