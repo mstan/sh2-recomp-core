@@ -18,3 +18,7 @@ add_custom_command(OUTPUT "${fixture_catalog}"
 add_executable(sh2_step_test step_test.c "${fixture_catalog}")
 target_link_libraries(sh2_step_test PRIVATE sh2-recomp-core::interpreter)
 add_test(NAME sh2_step COMMAND sh2_step_test)
+
+add_executable(sh7604_bsc_test sh7604_bsc_test.c)
+target_link_libraries(sh7604_bsc_test PRIVATE sh2-recomp-core::core)
+add_test(NAME sh7604_bsc COMMAND sh7604_bsc_test)

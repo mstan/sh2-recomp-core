@@ -11,8 +11,13 @@ Strict execution checks the current fetch word at the guest PC before
 calling a generated function. The separately linked interpreter shares the
 instruction semantics and can continue after a catalog miss. Decode misses,
 bus waits and faults are explicit results. Exception delivery, interrupt
-sequencing, on-chip devices and the remaining instruction semantics are
-further bring-up work.
+sequencing and the remaining instruction semantics are further bring-up work.
+
+The optional SH7604 bus controller models the keyed control registers,
+refresh counter, compare flag and mode-register write window. Board bindings
+advance it with SH-2 clock counts, consume refresh requests and apply memory
+effects. The component uses the register layout from section 7 of the
+[Hitachi SH7604 Hardware Manual](https://antime.kapsi.fi/sega/files/sh7604.pdf).
 
 ## Build
 
