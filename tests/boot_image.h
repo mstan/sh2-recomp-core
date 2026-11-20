@@ -5,7 +5,7 @@
 
 /* Self-authored program with reset vectors, a GBR load, delayed call and
  * return, a word store, and a signed byte load. */
-static const uint8_t boot_image[192] = {
+static const uint8_t boot_image[0xca] = {
     [3] = 0x10, [7] = 0x3C,
     [0x10] = 0xD1, 0x07, 0x41, 0x1E, 0xE2, 0x80, 0xB0, 0x03,
     [0x18] = 0x72, 0x01, 0x21, 0x21, 0xC4, 0x03, 0x00, 0x09,
@@ -46,7 +46,14 @@ static const uint8_t boot_image[192] = {
     [0xb4] = 0x41, 0x00, /* shll r1 */
     0x03, 0x2c,          /* mov.b @(r0,r2),r3 */
     0x00, 0x1d,          /* mov.w @(r0,r1),r0 */
-    0x41, 0x20           /* shal r1 */
+    0x41, 0x20,          /* shal r1 */
+    [0xbc] = 0x00, 0x02, /* stc sr,r0 */
+    0x40, 0x09,          /* shlr2 r0 */
+    0xc9, 0x1c,          /* and #28,r0 */
+    0x01, 0x12,          /* stc gbr,r1 */
+    0x41, 0x19,          /* shlr8 r1 */
+    0x02, 0x22,          /* stc vbr,r2 */
+    0x42, 0x29           /* shlr16 r2 */
 };
 
 #endif

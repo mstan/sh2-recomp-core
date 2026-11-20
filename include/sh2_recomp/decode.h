@@ -70,7 +70,14 @@ typedef enum {
     SH2_OP_RTE,
     SH2_OP_SHLL,
     SH2_OP_MOV_B_LOAD_INDEX,
-    SH2_OP_MOV_W_LOAD_INDEX
+    SH2_OP_MOV_W_LOAD_INDEX,
+    SH2_OP_STC_SR,
+    SH2_OP_STC_GBR,
+    SH2_OP_STC_VBR,
+    SH2_OP_SHLR2,
+    SH2_OP_SHLR8,
+    SH2_OP_SHLR16,
+    SH2_OP_AND_IMM
 } Sh2Opcode;
 
 typedef struct {

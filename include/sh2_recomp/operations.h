@@ -35,10 +35,10 @@ static inline Sh2StepResult sh2_op_t(Sh2Context *context, bool value)
     return sh2_retire(context, 1);
 }
 
-static inline Sh2StepResult sh2_op_control(Sh2Context *context, uint32_t *control,
+static inline Sh2StepResult sh2_op_control(Sh2Context *context, uint32_t *destination,
                                           uint32_t value)
 {
-    *control = value;
+    *destination = value;
     sh2_retire(context, 1);
     context->state.irq_inhibit = true;
     return SH2_STEP_OK;
