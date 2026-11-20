@@ -106,7 +106,9 @@ static const uint8_t boot_image[] = {
     [0x13e] = 0x00, 0x0b, /* rts */
     0x00, 0x18,          /* sett (delay slot) */
     [0x142] = 0x60, 0x37, /* not r3,r0 */
-    0x60, 0x07           /* not r0,r0 */
+    0x60, 0x07,          /* not r0,r0 */
+    [0x146] = 0x38, 0x3d, /* dmuls.l r3,r8 */
+    0x38, 0x35           /* dmulu.l r3,r8 */
 };
 
 #endif

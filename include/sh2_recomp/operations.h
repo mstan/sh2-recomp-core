@@ -150,6 +150,27 @@ static inline Sh2StepResult sh2_op_mul_l(Sh2Context *context, unsigned rn, unsig
     return sh2_retire(context, 2);
 }
 
+static inline Sh2StepResult sh2_store_double_product(Sh2Context *context, uint64_t product)
+{
+    context->state.mach = (uint32_t)(product >> 32);
+    context->state.macl = (uint32_t)product;
+    return sh2_retire(context, 2);
+}
+
+static inline Sh2StepResult sh2_op_dmuls_l(Sh2Context *context, unsigned rn, unsigned rm)
+{
+    const Sh2State *state = &context->state;
+    const int64_t left = (int64_t)sh2_signed_order(state->r[rn]) - INT64_C(0x80000000);
+    const int64_t right = (int64_t)sh2_signed_order(state->r[rm]) - INT64_C(0x80000000);
+    return sh2_store_double_product(context, (uint64_t)(left * right));
+}
+
+static inline Sh2StepResult sh2_op_dmulu_l(Sh2Context *context, unsigned rn, unsigned rm)
+{
+    const Sh2State *state = &context->state;
+    return sh2_store_double_product(context, (uint64_t)state->r[rn] * state->r[rm]);
+}
+
 static inline Sh2StepResult sh2_op_div0(Sh2Context *context, bool q, bool m)
 {
     Sh2State *state = &context->state;

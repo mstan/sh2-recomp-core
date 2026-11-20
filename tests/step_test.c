@@ -556,5 +556,30 @@ int main(void)
         assert(native.state.cycles == before_not + step + 1 && interpreted.state.cycles == native.state.cycles);
         assert(native.state.sr == (SH2_SR_T | SH2_SR_Q) && interpreted.state.sr == native.state.sr);
     }
+    static const struct {
+        unsigned pc;
+        uint32_t left, right, mach, macl;
+    } products[] = {
+        {0x146, UINT32_C(0x80000000), 2, UINT32_MAX, 0},
+        {0x146, UINT32_C(0x80000000), UINT32_C(0x80000000), UINT32_C(0x40000000), 0},
+        {0x148, UINT32_MAX, UINT32_MAX, UINT32_C(0xfffffffe), 1},
+    };
+    for (unsigned i = 0; i < sizeof products / sizeof products[0]; ++i) {
+        native.state.pc = products[i].pc;
+        native.state.r[8] = products[i].left;
+        native.state.r[3] = products[i].right;
+        native.state.mach = native.state.macl = UINT32_C(0xffffffff);
+        const uint64_t before_multiply = native.state.cycles;
+        interpreted.state = native.state;
+        assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+        assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
+        assert(native.state.mach == products[i].mach && interpreted.state.mach == native.state.mach);
+        assert(native.state.macl == products[i].macl && interpreted.state.macl == native.state.macl);
+        assert(native.state.r[8] == products[i].left && native.state.r[3] == products[i].right);
+        assert(memcmp(native.state.r, interpreted.state.r, sizeof native.state.r) == 0);
+        assert(native.state.pc == products[i].pc + 2 && interpreted.state.pc == native.state.pc);
+        assert(native.state.cycles == before_multiply + 2 && interpreted.state.cycles == native.state.cycles);
+        assert(native.state.sr == (SH2_SR_T | SH2_SR_Q) && interpreted.state.sr == native.state.sr);
+    }
     return 0;
 }
