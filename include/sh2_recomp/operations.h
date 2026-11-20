@@ -35,6 +35,23 @@ static inline Sh2StepResult sh2_op_t(Sh2Context *context, bool value)
     return sh2_retire(context, 1);
 }
 
+static inline Sh2StepResult sh2_op_addc(Sh2Context *context, unsigned rn, unsigned rm)
+{
+    Sh2State *state = &context->state;
+    const uint64_t sum = (uint64_t)state->r[rn] + state->r[rm] + (state->sr & SH2_SR_T);
+    state->r[rn] = (uint32_t)sum;
+    return sh2_op_t(context, (sum >> 32) != 0);
+}
+
+static inline Sh2StepResult sh2_op_subc(Sh2Context *context, unsigned rn, unsigned rm)
+{
+    Sh2State *state = &context->state;
+    const uint64_t minuend = state->r[rn];
+    const uint64_t subtrahend = (uint64_t)state->r[rm] + (state->sr & SH2_SR_T);
+    state->r[rn] = (uint32_t)(minuend - subtrahend);
+    return sh2_op_t(context, minuend < subtrahend);
+}
+
 static inline Sh2StepResult sh2_op_control(Sh2Context *context, uint32_t *destination,
                                           uint32_t value)
 {
