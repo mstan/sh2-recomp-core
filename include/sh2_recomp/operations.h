@@ -5,7 +5,7 @@
 
 /* One-instruction primitives shared by generated C and the interpreter.
  * The decoder supplies in-range register indices and aligned widths. */
-enum { SH2_SR_T = 1, SH2_SR_BITS = 0x3F3 };
+enum { SH2_SR_T = 1, SH2_SR_Q = 0x100, SH2_SR_M = 0x200, SH2_SR_BITS = 0x3F3 };
 
 static inline Sh2StepResult sh2_retire(Sh2Context *context, unsigned cycles)
 {
@@ -65,6 +65,14 @@ static inline Sh2StepResult sh2_op_rotr(Sh2Context *context, unsigned rn)
     return sh2_op_t(context, (value & 1) != 0);
 }
 
+static inline Sh2StepResult sh2_op_rotcl(Sh2Context *context, unsigned rn)
+{
+    Sh2State *state = &context->state;
+    const uint32_t before = state->r[rn];
+    state->r[rn] = (before << 1) | (state->sr & SH2_SR_T);
+    return sh2_op_t(context, (before >> 31) != 0);
+}
+
 static inline Sh2StepResult sh2_op_shar(Sh2Context *context, unsigned rn)
 {
     uint32_t value = context->state.r[rn];
@@ -79,6 +87,40 @@ static inline Sh2StepResult sh2_op_muls_w(Sh2Context *context, unsigned rn, unsi
     const int32_t right = (int32_t)((state->r[rm] & 0xffffu) ^ 0x8000u) - 0x8000;
     state->macl = (uint32_t)(left * right);
     return sh2_retire(context, 1);
+}
+
+static inline Sh2StepResult sh2_op_mulu_w(Sh2Context *context, unsigned rn, unsigned rm)
+{
+    Sh2State *state = &context->state;
+    state->macl = (state->r[rn] & 0xffffu) * (state->r[rm] & 0xffffu);
+    return sh2_retire(context, 1);
+}
+
+static inline Sh2StepResult sh2_op_div0(Sh2Context *context, bool q, bool m)
+{
+    Sh2State *state = &context->state;
+    state->sr = (state->sr & ~(uint32_t)(SH2_SR_Q | SH2_SR_M)) |
+                (q ? SH2_SR_Q : 0u) | (m ? SH2_SR_M : 0u);
+    return sh2_op_t(context, q != m);
+}
+
+static inline Sh2StepResult sh2_op_div1(Sh2Context *context, unsigned rn, unsigned rm)
+{
+    Sh2State *state = &context->state;
+    const bool m = (state->sr & SH2_SR_M) != 0;
+    const bool add_divisor = ((state->sr & SH2_SR_Q) != 0) != m;
+    const bool high_bit = (state->r[rn] >> 31) != 0;
+    const uint32_t shifted = (state->r[rn] << 1) | (state->sr & SH2_SR_T);
+    state->r[rn] = shifted;
+
+    /* The SH-2 shifts Rn before the add/subtract, including when Rm is Rn. */
+    const uint32_t divisor = state->r[rm];
+    const uint32_t partial = add_divisor ? shifted + divisor : shifted - divisor;
+    const bool carry_or_borrow = add_divisor ? partial < shifted : partial > shifted;
+    const bool q = (high_bit != carry_or_borrow) != m;
+    state->r[rn] = partial;
+    state->sr = (state->sr & ~(uint32_t)SH2_SR_Q) | (q ? SH2_SR_Q : 0u);
+    return sh2_op_t(context, q == m);
 }
 
 static inline Sh2StepResult sh2_op_dt(Sh2Context *context, unsigned rn)

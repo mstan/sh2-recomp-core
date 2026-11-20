@@ -85,7 +85,15 @@ typedef enum {
     SH2_OP_MOV_B_POSTINC,
     SH2_OP_MULS_W,
     SH2_OP_STS_MACL,
-    SH2_OP_SHAR
+    SH2_OP_SHAR,
+    SH2_OP_MULU_W,
+    SH2_OP_SHLL8,
+    SH2_OP_DIV0U,
+    SH2_OP_DIV0S,
+    SH2_OP_DIV1,
+    SH2_OP_ROTCL,
+    SH2_OP_MOV_L_STORE_INDEX,
+    SH2_OP_CMP_PL
 } Sh2Opcode;
 
 typedef struct {
