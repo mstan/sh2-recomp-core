@@ -30,3 +30,7 @@ add_test(NAME sh7604_system COMMAND sh7604_system_test)
 add_executable(sh7604_cache_test sh7604_cache_test.c)
 target_link_libraries(sh7604_cache_test PRIVATE sh2-recomp-core::core)
 add_test(NAME sh7604_cache COMMAND sh7604_cache_test)
+
+add_executable(sh7604_frt_test sh7604_frt_test.c)
+target_link_libraries(sh7604_frt_test PRIVATE sh2-recomp-core::core)
+add_test(NAME sh7604_frt COMMAND sh7604_frt_test)
