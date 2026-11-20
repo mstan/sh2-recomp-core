@@ -102,10 +102,13 @@ static const Encoding encodings[] = {
     {0xF00F, 0x3004, SH2_OP_DIV1,       RM_RN, false},
     {0xF00F, 0x3002, SH2_OP_CMP_HS,     RM_RN, false},
     {0xF00F, 0x3003, SH2_OP_CMP_GE,     RM_RN, false},
+    {0xF00F, 0x3006, SH2_OP_CMP_HI,     RM_RN, false},
     {0xF00F, 0x3007, SH2_OP_CMP_GT,     RM_RN, false},
     {0xF00F, 0x0007, SH2_OP_MUL_L,      RM_RN, false},
     {0xF00F, 0x600D, SH2_OP_EXTU_W,     RM_RN, false},
     {0xF00F, 0x600C, SH2_OP_EXTU_B,     RM_RN, false},
+    {0xF00F, 0x600E, SH2_OP_EXTS_B,     RM_RN, false},
+    {0xF00F, 0x600F, SH2_OP_EXTS_W,     RM_RN, false},
     {0xF00F, 0x6008, SH2_OP_SWAP_B,     RM_RN, false},
     {0xF00F, 0x6009, SH2_OP_SWAP_W,     RM_RN, false},
     {0xF0DF, 0x4000, SH2_OP_SHLL,       TARGET_RM, false}, /* SHLL and SHAL. */

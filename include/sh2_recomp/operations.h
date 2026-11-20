@@ -101,6 +101,16 @@ static inline uint32_t sh2_signed_order(uint32_t value)
     return value ^ UINT32_C(0x80000000);
 }
 
+static inline uint32_t sh2_extend_signed(uint32_t value, unsigned size)
+{
+    if (size < 4) {
+        const uint32_t sign = UINT32_C(1) << (8 * size - 1);
+        const uint32_t mask = (sign << 1) - 1;
+        return ((value & mask) ^ sign) - sign;
+    }
+    return value;
+}
+
 static inline Sh2StepResult sh2_op_mul_l(Sh2Context *context, unsigned rn, unsigned rm)
 {
     Sh2State *state = &context->state;

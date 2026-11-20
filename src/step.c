@@ -82,17 +82,6 @@ Sh2StepResult sh2_step_native(Sh2Context *context, const Sh2Catalog *catalog)
     return execute ? execute(context) : SH2_STEP_NATIVE_MISS;
 }
 
-static uint32_t extend_load(uint32_t value, unsigned size)
-{
-    if (size < 4) {
-        const uint32_t sign = UINT32_C(1) << (8 * size - 1);
-        value &= (sign << 1) - 1;
-        if (value & sign)
-            value |= ~((sign << 1) - 1);
-    }
-    return value;
-}
-
 Sh2StepResult sh2_op_load(Sh2Context *context, unsigned rn, uint32_t address,
                           unsigned size)
 {
@@ -100,7 +89,7 @@ Sh2StepResult sh2_op_load(Sh2Context *context, unsigned rn, uint32_t address,
     Sh2StepResult result = read_data(context, address, size, &value);
     if (result != SH2_STEP_OK)
         return result;
-    return sh2_op_register(context, rn, extend_load(value, size));
+    return sh2_op_register(context, rn, sh2_extend_signed(value, size));
 }
 
 Sh2StepResult sh2_op_mov_l_pc(Sh2Context *context, unsigned rn, uint32_t displacement)
@@ -122,7 +111,7 @@ Sh2StepResult sh2_op_load_postinc(Sh2Context *context, unsigned rn, unsigned rm,
         return result;
     if (rn != rm)
         context->state.r[rm] += size;
-    return sh2_op_register(context, rn, extend_load(value, size));
+    return sh2_op_register(context, rn, sh2_extend_signed(value, size));
 }
 
 Sh2StepResult sh2_op_mov_l_postinc(Sh2Context *context, unsigned rn, unsigned rm)
