@@ -96,6 +96,18 @@ static inline Sh2StepResult sh2_op_mulu_w(Sh2Context *context, unsigned rn, unsi
     return sh2_retire(context, 1);
 }
 
+static inline uint32_t sh2_signed_order(uint32_t value)
+{
+    return value ^ UINT32_C(0x80000000);
+}
+
+static inline Sh2StepResult sh2_op_mul_l(Sh2Context *context, unsigned rn, unsigned rm)
+{
+    Sh2State *state = &context->state;
+    state->macl = state->r[rn] * state->r[rm];
+    return sh2_retire(context, 2);
+}
+
 static inline Sh2StepResult sh2_op_div0(Sh2Context *context, bool q, bool m)
 {
     Sh2State *state = &context->state;

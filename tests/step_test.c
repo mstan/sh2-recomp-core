@@ -327,5 +327,22 @@ int main(void)
     }
     assert(native.state.pc == 0x108 && native.state.pr == UINT32_C(0x87654321));
     assert(native.state.r[0] == UINT32_C(0x123400ab));
+
+    native.state.r[0] = UINT32_MAX;
+    native.state.r[1] = 2;
+    native.state.r[4] = UINT32_C(0xbabeabc7);
+    const uint64_t start_cycles = native.state.cycles;
+    interpreted.state = native.state;
+    for (unsigned step = 0; step < 5; ++step) {
+        assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+        assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
+        assert(native.state.pc == interpreted.state.pc && native.state.sr == interpreted.state.sr);
+        assert(native.state.mach == interpreted.state.mach && native.state.macl == interpreted.state.macl);
+        assert(memcmp(native.state.r, interpreted.state.r, sizeof(native.state.r)) == 0);
+        assert((native.state.sr & SH2_SR_T) == (step != 0));
+    }
+    assert(native.state.pc == 0x112 && native.state.cycles == start_cycles + 6);
+    assert(native.state.r[4] == UINT32_C(0xabc70000) && native.state.mach == 2);
+    assert(native.state.macl == UINT32_C(0xfffffffe));
     return 0;
 }
