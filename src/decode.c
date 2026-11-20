@@ -30,6 +30,7 @@ typedef struct {
 static const Encoding encodings[] = {
     {0xffff, 0x002b, SH2_OP_RTE,       NO_OPERANDS, true},
     {0xFFFF, 0x0019, SH2_OP_DIV0U,      NO_OPERANDS, false},
+    {0xFFFF, 0x0008, SH2_OP_CLRT,       NO_OPERANDS, false},
     {0xFFFF, 0x0009, SH2_OP_NOP,        NO_OPERANDS, false},
     {0xFFFF, 0x0028, SH2_OP_CLRMAC,     NO_OPERANDS, false},
     {0xFFFF, 0x000B, SH2_OP_RTS,        NO_OPERANDS, true},

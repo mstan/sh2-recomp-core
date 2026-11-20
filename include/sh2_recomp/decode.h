@@ -117,7 +117,8 @@ typedef enum {
     SH2_OP_STS_PR,
     SH2_OP_CLRMAC,
     SH2_OP_MAC_W,
-    SH2_OP_XTRCT
+    SH2_OP_XTRCT,
+    SH2_OP_CLRT
 } Sh2Opcode;
 
 typedef struct {

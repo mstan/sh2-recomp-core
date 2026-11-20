@@ -29,6 +29,7 @@ int main(void)
         {0x6018, {SH2_OP_SWAP_B, 0, 1, 0, 0, false}},
         {0x6049, {SH2_OP_SWAP_W, 0, 4, 0, 0, false}},
         {0x203D, {SH2_OP_XTRCT, 0, 3, 0, 0, false}},
+        {0x0008, {SH2_OP_CLRT, 0, 0, 0, 0, false}},
         {0x38B2, {SH2_OP_CMP_HS, 8, 11, 0, 0, false}},
         {0x3573, {SH2_OP_CMP_GE,  5,  7, 0, 0, false}},
         {0x3307, {SH2_OP_CMP_GT,  3,  0, 0, 0, false}},

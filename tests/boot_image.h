@@ -100,7 +100,9 @@ static const uint8_t boot_image[0x140] = {
     0x42, 0x1f,          /* mac.w @r1+,@r2+ */
     0x41, 0x1f,          /* mac.w @r1+,@r1+ */
     [0x136] = 0x20, 0x3d, /* xtrct r3,r0 */
-    0x20, 0x0d           /* xtrct r0,r0 */
+    0x20, 0x0d,          /* xtrct r0,r0 */
+    [0x13a] = 0x00, 0x0b, /* rts */
+    0x00, 0x08           /* clrt (delay slot) */
 };
 
 #endif
