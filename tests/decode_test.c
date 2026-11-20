@@ -27,6 +27,7 @@ int main(void)
         {0xCBF0, {SH2_OP_OR_IMM, 0, 0, 240, 0, false}},
         {0x654D, {SH2_OP_EXTU_W, 5, 4, 0, 0, false}},
         {0x6018, {SH2_OP_SWAP_B, 0, 1, 0, 0, false}},
+        {0x6049, {SH2_OP_SWAP_W, 0, 4, 0, 0, false}},
         {0x38B2, {SH2_OP_CMP_HS, 8, 11, 0, 0, false}},
         {0x4100, {SH2_OP_SHLL, 0, 1, 0, 0, false}},
         {0x4A20, {SH2_OP_SHLL, 0, 10, 0, 0, false}},
@@ -65,6 +66,7 @@ int main(void)
         {0xA7FF, {SH2_OP_BRA,        0,  0,    0,  4094, true}},
         {0xA800, {SH2_OP_BRA,        0,  0,    0, -4096, true}},
         {0xBFFF, {SH2_OP_BSR,        0,  0,    0,    -2, true}},
+        {0x0523, {SH2_OP_BRAF,       0,  5,    0,     0, true}},
         {0x897F, {SH2_OP_BT,         0,  0,    0,   254, false}},
         {0x8B80, {SH2_OP_BF,         0,  0,    0,  -256, false}},
         {0x8D00, {SH2_OP_BT_S,       0,  0,    0,     0, true}},
@@ -92,7 +94,7 @@ int main(void)
         {0x002B, {SH2_OP_RTE,       0,  0,    0,     0, true}},
         {0x0109, {SH2_OP_UNSUPPORTED,0,  0,    0,     0, false}},
         {0x3D41, {SH2_OP_UNSUPPORTED,0,  0,    0,     0, false}},
-        {0x4E2A, {SH2_OP_UNSUPPORTED,0,  0,    0,     0, false}},
+        {0x4E2A, {SH2_OP_LDS_PR,     0, 14,    0,     0, false}},
         {0xFFFF, {SH2_OP_UNSUPPORTED,0,  0,    0,     0, false}}
     };
 

@@ -93,7 +93,10 @@ typedef enum {
     SH2_OP_DIV1,
     SH2_OP_ROTCL,
     SH2_OP_MOV_L_STORE_INDEX,
-    SH2_OP_CMP_PL
+    SH2_OP_CMP_PL,
+    SH2_OP_BRAF,
+    SH2_OP_SWAP_W,
+    SH2_OP_LDS_PR
 } Sh2Opcode;
 
 typedef struct {

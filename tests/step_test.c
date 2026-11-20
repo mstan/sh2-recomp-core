@@ -309,5 +309,23 @@ int main(void)
     assert(native.state.macl == 1711 && native.state.r[3] == 24);
     assert(native.state.r[4] == 71 * 256 && native_bus.bytes[0x1f] == 24);
     assert(native.state.pc == 0xfc && native.state.sr == (0x51 | SH2_SR_Q));
+
+    native.state.r[1] = UINT32_C(0x87654321);
+    native.state.r[4] = UINT32_C(0x00ab1234);
+    native.state.r[5] = 6;
+    native.state.pr = 0x80;
+    interpreted.state = native.state;
+    for (unsigned step = 0; step < 3; ++step) {
+        assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+        assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
+        assert(native.state.pc == interpreted.state.pc && native.state.pr == interpreted.state.pr);
+        assert(memcmp(native.state.r, interpreted.state.r, sizeof(native.state.r)) == 0);
+        if (step == 0)
+            assert(native.state.pc == 0xfe && native.state.pr == 0x80 && native.state.delay_pending);
+        if (step == 1)
+            assert(native.state.pc == 0x106 && native.state.irq_inhibit && !native.state.delay_pending);
+    }
+    assert(native.state.pc == 0x108 && native.state.pr == UINT32_C(0x87654321));
+    assert(native.state.r[0] == UINT32_C(0x123400ab));
     return 0;
 }

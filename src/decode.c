@@ -40,6 +40,7 @@ static const Encoding encodings[] = {
     {0xF000, 0xA000, SH2_OP_BRA,        DISP12, true},
     {0xF000, 0xB000, SH2_OP_BSR,        DISP12, true},
     {0xF0FF, 0x0003, SH2_OP_BSRF,       TARGET_RM, true},
+    {0xF0FF, 0x0023, SH2_OP_BRAF,       TARGET_RM, true},
     {0xFF00, 0x8900, SH2_OP_BT,         DISP8, false},
     {0xFF00, 0x8B00, SH2_OP_BF,         DISP8, false},
     {0xFF00, 0x8D00, SH2_OP_BT_S,       DISP8, true},
@@ -86,6 +87,7 @@ static const Encoding encodings[] = {
     {0xF0FF, 0x4026, SH2_OP_LDS_L_PR,   TARGET_RM, false},
     {0xF0FF, 0x4012, SH2_OP_STS_L_MACL, TARGET_RM, false},
     {0xF0FF, 0x4016, SH2_OP_LDS_L_MACL, TARGET_RM, false},
+    {0xF0FF, 0x402A, SH2_OP_LDS_PR,    TARGET_RM, false},
     {0xF00F, 0x3008, SH2_OP_SUB_REG,    RM_RN, false},
     {0xF00F, 0x2009, SH2_OP_AND_REG,    RM_RN, false},
     {0xF00F, 0x200A, SH2_OP_XOR_REG,    RM_RN, false},
@@ -97,6 +99,7 @@ static const Encoding encodings[] = {
     {0xF00F, 0x600D, SH2_OP_EXTU_W,     RM_RN, false},
     {0xF00F, 0x600C, SH2_OP_EXTU_B,     RM_RN, false},
     {0xF00F, 0x6008, SH2_OP_SWAP_B,     RM_RN, false},
+    {0xF00F, 0x6009, SH2_OP_SWAP_W,     RM_RN, false},
     {0xF0DF, 0x4000, SH2_OP_SHLL,       TARGET_RM, false}, /* SHLL and SHAL. */
     {0xF0FF, 0x4001, SH2_OP_SHLR,       TARGET_RM, false},
     {0xF0FF, 0x4009, SH2_OP_SHLR2,      TARGET_RM, false},
