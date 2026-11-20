@@ -40,7 +40,18 @@ typedef enum {
     SH2_OP_MOV_L_LOAD,
     SH2_OP_MOV_L_LOAD_DISP,
     SH2_OP_MOV_L_LOAD_GBR,
-    SH2_OP_MOV_L_STORE_GBR
+    SH2_OP_MOV_L_STORE_GBR,
+    SH2_OP_MOV_W_LOAD,
+    SH2_OP_MOV_W_POSTINC,
+    SH2_OP_MOV_L_STORE,
+    SH2_OP_MOV_B_STORE_GBR,
+    SH2_OP_AND_REG,
+    SH2_OP_OR_IMM,
+    SH2_OP_EXTU_W,
+    SH2_OP_SWAP_B,
+    SH2_OP_CMP_HS,
+    SH2_OP_SHLR,
+    SH2_OP_DT
 } Sh2Opcode;
 
 typedef struct {

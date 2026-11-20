@@ -41,6 +41,18 @@ static inline Sh2StepResult sh2_op_control(Sh2Context *context, uint32_t *contro
     return sh2_retire(context, 1);
 }
 
+static inline Sh2StepResult sh2_op_shlr(Sh2Context *context, unsigned rn)
+{
+    uint32_t value = context->state.r[rn];
+    context->state.r[rn] = value >> 1;
+    return sh2_op_t(context, (value & 1) != 0);
+}
+
+static inline Sh2StepResult sh2_op_dt(Sh2Context *context, unsigned rn)
+{
+    return sh2_op_t(context, --context->state.r[rn] == 0);
+}
+
 static inline Sh2StepResult sh2_op_branch(Sh2Context *context, uint32_t target,
                                          bool taken, bool delayed, bool link)
 {
@@ -69,6 +81,7 @@ extern "C" {
 
 Sh2StepResult sh2_op_mov_l_pc(Sh2Context *context, unsigned rn, uint32_t displacement);
 Sh2StepResult sh2_op_mov_l_postinc(Sh2Context *context, unsigned rn, unsigned rm);
+Sh2StepResult sh2_op_load_postinc(Sh2Context *context, unsigned rn, unsigned rm, unsigned size);
 Sh2StepResult sh2_op_load(Sh2Context *context, unsigned rn, uint32_t address, unsigned size);
 Sh2StepResult sh2_op_store(Sh2Context *context, uint32_t address, uint32_t value,
                            unsigned size);

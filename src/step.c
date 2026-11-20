@@ -81,20 +81,25 @@ Sh2StepResult sh2_step_native(Sh2Context *context, const Sh2Catalog *catalog)
     return execute ? execute(context) : SH2_STEP_NATIVE_MISS;
 }
 
-Sh2StepResult sh2_op_load(Sh2Context *context, unsigned rn, uint32_t address,
-                           unsigned size)
+static uint32_t extend_load(uint32_t value, unsigned size)
 {
-    uint32_t value;
-    Sh2StepResult result = read_data(context, address, size, &value);
-    if (result != SH2_STEP_OK)
-        return result;
     if (size < 4) {
         const uint32_t sign = UINT32_C(1) << (8 * size - 1);
         value &= (sign << 1) - 1;
         if (value & sign)
             value |= ~((sign << 1) - 1);
     }
-    return sh2_op_register(context, rn, value);
+    return value;
+}
+
+Sh2StepResult sh2_op_load(Sh2Context *context, unsigned rn, uint32_t address,
+                          unsigned size)
+{
+    uint32_t value;
+    Sh2StepResult result = read_data(context, address, size, &value);
+    if (result != SH2_STEP_OK)
+        return result;
+    return sh2_op_register(context, rn, extend_load(value, size));
 }
 
 Sh2StepResult sh2_op_mov_l_pc(Sh2Context *context, unsigned rn, uint32_t displacement)
@@ -106,15 +111,20 @@ Sh2StepResult sh2_op_mov_l_pc(Sh2Context *context, unsigned rn, uint32_t displac
     return sh2_op_load(context, rn, base + displacement, 4);
 }
 
-Sh2StepResult sh2_op_mov_l_postinc(Sh2Context *context, unsigned rn, unsigned rm)
+Sh2StepResult sh2_op_load_postinc(Sh2Context *context, unsigned rn, unsigned rm, unsigned size)
 {
     uint32_t value;
-    Sh2StepResult result = read_data(context, context->state.r[rm], 4, &value);
+    Sh2StepResult result = read_data(context, context->state.r[rm], size, &value);
     if (result != SH2_STEP_OK)
         return result;
     if (rn != rm)
-        context->state.r[rm] += 4;
-    return sh2_op_register(context, rn, value);
+        context->state.r[rm] += size;
+    return sh2_op_register(context, rn, extend_load(value, size));
+}
+
+Sh2StepResult sh2_op_mov_l_postinc(Sh2Context *context, unsigned rn, unsigned rm)
+{
+    return sh2_op_load_postinc(context, rn, rm, 4);
 }
 
 Sh2StepResult sh2_op_store(Sh2Context *context, uint32_t address, uint32_t value,
