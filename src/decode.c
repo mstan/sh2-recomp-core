@@ -60,6 +60,8 @@ static const Encoding encodings[] = {
     {0xF00F, 0x2005, SH2_OP_MOV_W_PREDEC, RM_RN, false},
     {0xF00F, 0x2006, SH2_OP_MOV_L_PREDEC, RM_RN, false},
     {0xF00F, 0x6002, SH2_OP_MOV_L_LOAD, RM_RN, false},
+    {0xF00F, 0x000C, SH2_OP_MOV_B_LOAD_INDEX, RM_RN, false},
+    {0xF00F, 0x000D, SH2_OP_MOV_W_LOAD_INDEX, RM_RN, false},
     {0xF00F, 0x000E, SH2_OP_MOV_L_LOAD_INDEX, RM_RN, false},
     {0xF00F, 0x6001, SH2_OP_MOV_W_LOAD, RM_RN, false},
     {0xF00F, 0x6000, SH2_OP_MOV_B_LOAD, RM_RN, false},
@@ -81,6 +83,7 @@ static const Encoding encodings[] = {
     {0xF00F, 0x600D, SH2_OP_EXTU_W,     RM_RN, false},
     {0xF00F, 0x600C, SH2_OP_EXTU_B,     RM_RN, false},
     {0xF00F, 0x6008, SH2_OP_SWAP_B,     RM_RN, false},
+    {0xF0DF, 0x4000, SH2_OP_SHLL,       TARGET_RM, false}, /* SHLL and SHAL. */
     {0xF0FF, 0x4001, SH2_OP_SHLR,       TARGET_RM, false},
     {0xF0FF, 0x4008, SH2_OP_SHLL2,      TARGET_RM, false},
     {0xF0FF, 0x4011, SH2_OP_CMP_PZ,     TARGET_RM, false},

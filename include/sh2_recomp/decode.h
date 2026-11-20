@@ -67,7 +67,10 @@ typedef enum {
     SH2_OP_CMP_PZ,
     SH2_OP_XOR_IMM,
     SH2_OP_MOV_L_LOAD_INDEX,
-    SH2_OP_RTE
+    SH2_OP_RTE,
+    SH2_OP_SHLL,
+    SH2_OP_MOV_B_LOAD_INDEX,
+    SH2_OP_MOV_W_LOAD_INDEX
 } Sh2Opcode;
 
 typedef struct {

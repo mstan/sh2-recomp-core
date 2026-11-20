@@ -51,6 +51,13 @@ static inline Sh2StepResult sh2_op_shlr(Sh2Context *context, unsigned rn)
     return sh2_op_t(context, (value & 1) != 0);
 }
 
+static inline Sh2StepResult sh2_op_shll(Sh2Context *context, unsigned rn)
+{
+    uint32_t value = context->state.r[rn];
+    context->state.r[rn] = value << 1;
+    return sh2_op_t(context, (value >> 31) != 0);
+}
+
 static inline Sh2StepResult sh2_op_dt(Sh2Context *context, unsigned rn)
 {
     return sh2_op_t(context, --context->state.r[rn] == 0);

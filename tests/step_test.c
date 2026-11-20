@@ -219,5 +219,24 @@ int main(void)
     assert(!sh2_interrupt_ready(&native, 8));
     assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
     assert(sh2_interrupt_ready(&native, 8));
+
+    start(&native, &native_bus);
+    start(&interpreted, &interpreted_bus);
+    native.state.pc = 0xb4;
+    native.state.r[0] = 0x10;
+    native.state.r[1] = UINT32_C(0x80000028);
+    native.state.r[2] = 0x50;
+    interpreted.state = native.state;
+    for (unsigned step = 0; step < 4; ++step) {
+        assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+        assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
+        assert(native.state.pc == interpreted.state.pc && native.state.sr == interpreted.state.sr);
+        assert(memcmp(native.state.r, interpreted.state.r, sizeof(native.state.r)) == 0);
+        assert((native.state.sr & SH2_SR_T) == (step < 3 ? 1u : 0u));
+    }
+    assert(native.state.pc == 0xbc && native.state.cycles == 4);
+    assert(native.state.r[0] == UINT32_C(0xffff8003));
+    assert(native.state.r[1] == 0xa0);
+    assert(native.state.r[3] == UINT32_C(0xffffff80));
     return 0;
 }
