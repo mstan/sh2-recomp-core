@@ -81,7 +81,11 @@ typedef enum {
     SH2_OP_ROTR,
     SH2_OP_XOR_REG,
     SH2_OP_STS_L_MACL,
-    SH2_OP_LDS_L_MACL
+    SH2_OP_LDS_L_MACL,
+    SH2_OP_MOV_B_POSTINC,
+    SH2_OP_MULS_W,
+    SH2_OP_STS_MACL,
+    SH2_OP_SHAR
 } Sh2Opcode;
 
 typedef struct {

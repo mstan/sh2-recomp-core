@@ -65,6 +65,22 @@ static inline Sh2StepResult sh2_op_rotr(Sh2Context *context, unsigned rn)
     return sh2_op_t(context, (value & 1) != 0);
 }
 
+static inline Sh2StepResult sh2_op_shar(Sh2Context *context, unsigned rn)
+{
+    uint32_t value = context->state.r[rn];
+    context->state.r[rn] = (value >> 1) | (value & UINT32_C(0x80000000));
+    return sh2_op_t(context, (value & 1) != 0);
+}
+
+static inline Sh2StepResult sh2_op_muls_w(Sh2Context *context, unsigned rn, unsigned rm)
+{
+    Sh2State *state = &context->state;
+    const int32_t left = (int32_t)((state->r[rn] & 0xffffu) ^ 0x8000u) - 0x8000;
+    const int32_t right = (int32_t)((state->r[rm] & 0xffffu) ^ 0x8000u) - 0x8000;
+    state->macl = (uint32_t)(left * right);
+    return sh2_retire(context, 1);
+}
+
 static inline Sh2StepResult sh2_op_dt(Sh2Context *context, unsigned rn)
 {
     return sh2_op_t(context, --context->state.r[rn] == 0);
