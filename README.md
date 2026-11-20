@@ -24,6 +24,11 @@ owns peripheral clock gating, cache storage, and the purge of valid entries
 and replacement state. The register layout and reset values follow sections
 8.2.1 and 14.2.1 of the [Renesas SH7604 Hardware Manual](https://www.renesas.com/ja/document/mah/superh-risc-engine-sh7604).
 
+`Sh7604Cache` supplies write-through caching for ordinary memory spans. It
+uses the processor's 16-byte lines, pseudo-LRU replacement and read-fill
+controls. Consumers supply the live backing bytes and choose cacheable or
+cache-through addressing.
+
 ## Build
 
 ```sh

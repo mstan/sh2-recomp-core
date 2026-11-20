@@ -72,6 +72,8 @@ Sh2StepResult sh2_op_mov_l_postinc(Sh2Context *context, unsigned rn, unsigned rm
 Sh2StepResult sh2_op_load(Sh2Context *context, unsigned rn, uint32_t address, unsigned size);
 Sh2StepResult sh2_op_store(Sh2Context *context, uint32_t address, uint32_t value,
                            unsigned size);
+Sh2StepResult sh2_op_store_predec(Sh2Context *context, unsigned rn, unsigned rm,
+                                  unsigned size);
 
 #ifdef __cplusplus
 }

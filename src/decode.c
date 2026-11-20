@@ -11,6 +11,7 @@ typedef enum {
     RM_RN_DISP_LONG,
     DISP_GBR_BYTE,
     DISP_GBR_WORD,
+    DISP_GBR_LONG,
     IMM8_UNSIGNED,
     IMM8_SIGNED
 } OperandFormat;
@@ -44,8 +45,15 @@ static const Encoding encodings[] = {
     {0xF000, 0x1000, SH2_OP_MOV_L_STORE_DISP, RM_RN_DISP_LONG, false},
     {0xF00F, 0x2000, SH2_OP_MOV_B_STORE, RM_RN, false},
     {0xF00F, 0x2001, SH2_OP_MOV_W_STORE, RM_RN, false},
+    {0xF00F, 0x2004, SH2_OP_MOV_B_PREDEC, RM_RN, false},
+    {0xF00F, 0x2005, SH2_OP_MOV_W_PREDEC, RM_RN, false},
+    {0xF00F, 0x2006, SH2_OP_MOV_L_PREDEC, RM_RN, false},
+    {0xF00F, 0x6002, SH2_OP_MOV_L_LOAD, RM_RN, false},
+    {0xF000, 0x5000, SH2_OP_MOV_L_LOAD_DISP, RM_RN_DISP_LONG, false},
     {0xFF00, 0xC400, SH2_OP_MOV_B_LOAD_GBR, DISP_GBR_BYTE, false},
+    {0xFF00, 0xC600, SH2_OP_MOV_L_LOAD_GBR, DISP_GBR_LONG, false},
     {0xFF00, 0xC100, SH2_OP_MOV_W_STORE_GBR, DISP_GBR_WORD, false},
+    {0xFF00, 0xC200, SH2_OP_MOV_L_STORE_GBR, DISP_GBR_LONG, false},
     {0xF0FF, 0x400E, SH2_OP_LDC_SR,     TARGET_RM, false},
     {0xF0FF, 0x401E, SH2_OP_LDC_GBR,    TARGET_RM, false},
     {0xF0FF, 0x402E, SH2_OP_LDC_VBR,    TARGET_RM, false},
@@ -103,6 +111,9 @@ Sh2Instruction sh2_decode(uint16_t word)
             break;
         case DISP_GBR_WORD:
             decoded.displacement = (int16_t)(2 * (word & 0xFFu));
+            break;
+        case DISP_GBR_LONG:
+            decoded.displacement = (int16_t)(4 * (word & 0xFFu));
             break;
         case IMM8_UNSIGNED:
             decoded.immediate = (int16_t)(word & 0xFFu);

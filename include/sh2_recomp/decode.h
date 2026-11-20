@@ -33,7 +33,14 @@ typedef enum {
     SH2_OP_LDC_VBR,
     SH2_OP_SUB_REG,
     SH2_OP_TST_IMM,
-    SH2_OP_CMP_EQ_IMM
+    SH2_OP_CMP_EQ_IMM,
+    SH2_OP_MOV_B_PREDEC,
+    SH2_OP_MOV_W_PREDEC,
+    SH2_OP_MOV_L_PREDEC,
+    SH2_OP_MOV_L_LOAD,
+    SH2_OP_MOV_L_LOAD_DISP,
+    SH2_OP_MOV_L_LOAD_GBR,
+    SH2_OP_MOV_L_STORE_GBR
 } Sh2Opcode;
 
 typedef struct {

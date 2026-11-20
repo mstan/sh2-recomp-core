@@ -10,6 +10,13 @@ typedef struct {
 int main(void)
 {
     static const DecodeCase cases[] = {
+        {0x2E34, {SH2_OP_MOV_B_PREDEC, 14, 3, 0, 0, false}},
+        {0x2805, {SH2_OP_MOV_W_PREDEC, 8, 0, 0, 0, false}},
+        {0x2FF6, {SH2_OP_MOV_L_PREDEC, 15, 15, 0, 0, false}},
+        {0x68D2, {SH2_OP_MOV_L_LOAD, 8, 13, 0, 0, false}},
+        {0x50D2, {SH2_OP_MOV_L_LOAD_DISP, 0, 13, 0, 8, false}},
+        {0xC6FF, {SH2_OP_MOV_L_LOAD_GBR, 0, 0, 0, 1020, false}},
+        {0xC209, {SH2_OP_MOV_L_STORE_GBR, 0, 0, 0, 36, false}},
         {0x0009, {SH2_OP_NOP,        0,  0,    0,     0, false}},
         {0x000B, {SH2_OP_RTS,        0,  0,    0,     0, true}},
         {0xEF80, {SH2_OP_MOV_IMM,   15,  0, -128,     0, false}},

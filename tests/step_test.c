@@ -1,5 +1,6 @@
 #include "boot_image.h"
 #include "sh2_recomp/interpreter.h"
+#include "sh2_recomp/operations.h"
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -101,6 +102,14 @@ int main(void)
     assert(native.state.r[0] == UINT32_MAX && native.state.r[2] == UINT32_C(0xFFFFFFA2));
     assert(native_bus.bytes[0x38] == 0xFF && native_bus.bytes[0x39] == 0xA2);
     assert(native_bus.fetches == 12 && interpreted_bus.fetches == 12);
+
+    start(&native, &native_bus);
+    native_bus.wait_write = true;
+    assert(sh2_op_store_predec(&native, 15, 15, 4) == SH2_STEP_WAIT);
+    assert(native.state.r[15] == 0x3C && native.state.cycles == 0);
+    assert(sh2_op_store_predec(&native, 15, 15, 4) == SH2_STEP_OK);
+    assert(native.state.r[15] == 0x38 && native.state.cycles == 1);
+    assert(native_bus.bytes[0x3B] == 0x3C);
 
     start(&native, &native_bus);
     native.state.pc = 0x14;

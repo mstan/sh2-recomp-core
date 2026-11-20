@@ -129,3 +129,13 @@ Sh2StepResult sh2_op_store(Sh2Context *context, uint32_t address, uint32_t value
     Sh2StepResult result = bus_result(context->bus.write(context->user, address, size, value));
     return result == SH2_STEP_OK ? sh2_retire(context, 1) : result;
 }
+
+Sh2StepResult sh2_op_store_predec(Sh2Context *context, unsigned rn, unsigned rm,
+                                  unsigned size)
+{
+    const uint32_t address = context->state.r[rn] - size;
+    Sh2StepResult result = sh2_op_store(context, address, context->state.r[rm], size);
+    if (result == SH2_STEP_OK)
+        context->state.r[rn] = address;
+    return result;
+}
