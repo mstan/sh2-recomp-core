@@ -104,18 +104,13 @@ Sh2StepResult sh2_op_load(Sh2Context *context, unsigned rn, uint32_t address,
 
 Sh2StepResult sh2_op_mov_l_pc(Sh2Context *context, unsigned rn, uint32_t displacement)
 {
-    /* PC-relative literal loads in delay slots need the target-PC rules. */
-    if (context->state.delay_pending)
-        return SH2_STEP_UNSUPPORTED;
-    const uint32_t base = (context->state.pc + 4) & ~UINT32_C(3);
+    const uint32_t base = sh2_literal_pc(&context->state) & ~UINT32_C(3);
     return sh2_op_load(context, rn, base + displacement, 4);
 }
 
 Sh2StepResult sh2_op_mov_w_pc(Sh2Context *context, unsigned rn, uint32_t displacement)
 {
-    if (context->state.delay_pending)
-        return SH2_STEP_UNSUPPORTED;
-    return sh2_op_load(context, rn, context->state.pc + 4 + displacement, 2);
+    return sh2_op_load(context, rn, sh2_literal_pc(&context->state) + displacement, 2);
 }
 
 Sh2StepResult sh2_op_load_postinc(Sh2Context *context, unsigned rn, unsigned rm, unsigned size)
@@ -134,6 +129,16 @@ Sh2StepResult sh2_op_mov_l_postinc(Sh2Context *context, unsigned rn, unsigned rm
     return sh2_op_load_postinc(context, rn, rm, 4);
 }
 
+Sh2StepResult sh2_op_lds_l_pr(Sh2Context *context, unsigned rm)
+{
+    uint32_t value;
+    Sh2StepResult result = read_data(context, context->state.r[rm], 4, &value);
+    if (result != SH2_STEP_OK)
+        return result;
+    context->state.r[rm] += 4;
+    return sh2_op_control(context, &context->state.pr, value);
+}
+
 Sh2StepResult sh2_op_store(Sh2Context *context, uint32_t address, uint32_t value,
                            unsigned size)
 {
@@ -147,12 +152,21 @@ Sh2StepResult sh2_op_store(Sh2Context *context, uint32_t address, uint32_t value
     return result == SH2_STEP_OK ? sh2_retire(context, 1) : result;
 }
 
-Sh2StepResult sh2_op_store_predec(Sh2Context *context, unsigned rn, unsigned rm,
-                                  unsigned size)
+static Sh2StepResult store_predec(Sh2Context *context, unsigned rn, uint32_t value, unsigned size)
 {
     const uint32_t address = context->state.r[rn] - size;
-    Sh2StepResult result = sh2_op_store(context, address, context->state.r[rm], size);
+    Sh2StepResult result = sh2_op_store(context, address, value, size);
     if (result == SH2_STEP_OK)
         context->state.r[rn] = address;
     return result;
+}
+
+Sh2StepResult sh2_op_store_predec(Sh2Context *context, unsigned rn, unsigned rm, unsigned size)
+{
+    return store_predec(context, rn, context->state.r[rm], size);
+}
+
+Sh2StepResult sh2_op_sts_l_pr(Sh2Context *context, unsigned rn)
+{
+    return store_predec(context, rn, context->state.pr, 4);
 }

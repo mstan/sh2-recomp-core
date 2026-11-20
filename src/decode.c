@@ -14,7 +14,7 @@ typedef enum {
     R0_RN_DISP_WORD,
     DISP_GBR_BYTE,
     DISP_GBR_WORD,
-    DISP_GBR_LONG,
+    SCALED_DISP8_LONG,
     IMM8_UNSIGNED,
     IMM8_SIGNED
 } OperandFormat;
@@ -37,6 +37,7 @@ static const Encoding encodings[] = {
     {0xF00F, 0x3000, SH2_OP_CMP_EQ_REG, RM_RN, false},
     {0xF000, 0xA000, SH2_OP_BRA,        DISP12, true},
     {0xF000, 0xB000, SH2_OP_BSR,        DISP12, true},
+    {0xF0FF, 0x0003, SH2_OP_BSRF,       TARGET_RM, true},
     {0xFF00, 0x8900, SH2_OP_BT,         DISP8, false},
     {0xFF00, 0x8B00, SH2_OP_BF,         DISP8, false},
     {0xFF00, 0x8D00, SH2_OP_BT_S,       DISP8, true},
@@ -50,6 +51,7 @@ static const Encoding encodings[] = {
     {0xF000, 0x1000, SH2_OP_MOV_L_STORE_DISP, RM_RN_DISP_LONG, false},
     {0xFF00, 0x8000, SH2_OP_MOV_B_STORE_R0_DISP, R0_RN_DISP_BYTE, false},
     {0xFF00, 0x8100, SH2_OP_MOV_W_STORE_R0_DISP, R0_RN_DISP_WORD, false},
+    {0xFF00, 0x8400, SH2_OP_MOV_B_LOAD_R0_DISP, R0_RN_DISP_BYTE, false},
     {0xF00F, 0x2000, SH2_OP_MOV_B_STORE, RM_RN, false},
     {0xF00F, 0x2001, SH2_OP_MOV_W_STORE, RM_RN, false},
     {0xF00F, 0x2002, SH2_OP_MOV_L_STORE, RM_RN, false},
@@ -58,25 +60,33 @@ static const Encoding encodings[] = {
     {0xF00F, 0x2006, SH2_OP_MOV_L_PREDEC, RM_RN, false},
     {0xF00F, 0x6002, SH2_OP_MOV_L_LOAD, RM_RN, false},
     {0xF00F, 0x6001, SH2_OP_MOV_W_LOAD, RM_RN, false},
+    {0xF00F, 0x6000, SH2_OP_MOV_B_LOAD, RM_RN, false},
     {0xF000, 0x5000, SH2_OP_MOV_L_LOAD_DISP, RM_RN_DISP_LONG, false},
     {0xFF00, 0xC400, SH2_OP_MOV_B_LOAD_GBR, DISP_GBR_BYTE, false},
-    {0xFF00, 0xC600, SH2_OP_MOV_L_LOAD_GBR, DISP_GBR_LONG, false},
+    {0xFF00, 0xC600, SH2_OP_MOV_L_LOAD_GBR, SCALED_DISP8_LONG, false},
     {0xFF00, 0xC000, SH2_OP_MOV_B_STORE_GBR, DISP_GBR_BYTE, false},
     {0xFF00, 0xC100, SH2_OP_MOV_W_STORE_GBR, DISP_GBR_WORD, false},
-    {0xFF00, 0xC200, SH2_OP_MOV_L_STORE_GBR, DISP_GBR_LONG, false},
+    {0xFF00, 0xC200, SH2_OP_MOV_L_STORE_GBR, SCALED_DISP8_LONG, false},
+    {0xFF00, 0xC700, SH2_OP_MOVA,       SCALED_DISP8_LONG, false},
     {0xF0FF, 0x400E, SH2_OP_LDC_SR,     TARGET_RM, false},
     {0xF0FF, 0x401E, SH2_OP_LDC_GBR,    TARGET_RM, false},
     {0xF0FF, 0x402E, SH2_OP_LDC_VBR,    TARGET_RM, false},
+    {0xF0FF, 0x4022, SH2_OP_STS_L_PR,   TARGET_RM, false},
+    {0xF0FF, 0x4026, SH2_OP_LDS_L_PR,   TARGET_RM, false},
     {0xF00F, 0x3008, SH2_OP_SUB_REG,    RM_RN, false},
     {0xF00F, 0x2009, SH2_OP_AND_REG,    RM_RN, false},
     {0xF00F, 0x3002, SH2_OP_CMP_HS,     RM_RN, false},
     {0xF00F, 0x600D, SH2_OP_EXTU_W,     RM_RN, false},
+    {0xF00F, 0x600C, SH2_OP_EXTU_B,     RM_RN, false},
     {0xF00F, 0x6008, SH2_OP_SWAP_B,     RM_RN, false},
     {0xF0FF, 0x4001, SH2_OP_SHLR,       TARGET_RM, false},
+    {0xF0FF, 0x4008, SH2_OP_SHLL2,      TARGET_RM, false},
+    {0xF0FF, 0x4011, SH2_OP_CMP_PZ,     TARGET_RM, false},
     {0xF0FF, 0x4010, SH2_OP_DT,         TARGET_RM, false},
     {0xF00F, 0x2008, SH2_OP_TST_REG,    RM_RN, false},
     {0xFF00, 0xC800, SH2_OP_TST_IMM,    IMM8_UNSIGNED, false},
     {0xFF00, 0xCB00, SH2_OP_OR_IMM,     IMM8_UNSIGNED, false},
+    {0xFF00, 0xCA00, SH2_OP_XOR_IMM,    IMM8_UNSIGNED, false},
     {0xFF00, 0x8800, SH2_OP_CMP_EQ_IMM, IMM8_SIGNED, false}
 };
 
@@ -136,7 +146,7 @@ Sh2Instruction sh2_decode(uint16_t word)
         case DISP_GBR_WORD:
             decoded.displacement = (int16_t)(2 * (word & 0xFFu));
             break;
-        case DISP_GBR_LONG:
+        case SCALED_DISP8_LONG:
             decoded.displacement = (int16_t)(4 * (word & 0xFFu));
             break;
         case IMM8_UNSIGNED:
