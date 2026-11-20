@@ -108,7 +108,10 @@ typedef enum {
     SH2_OP_MOV_W_LOAD_R0_DISP,
     SH2_OP_CMP_HI,
     SH2_OP_EXTS_B,
-    SH2_OP_EXTS_W
+    SH2_OP_EXTS_W,
+    SH2_OP_STS_MACH,
+    SH2_OP_ROTL,
+    SH2_OP_OR_REG
 } Sh2Opcode;
 
 typedef struct {

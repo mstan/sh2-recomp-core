@@ -58,6 +58,15 @@ static inline Sh2StepResult sh2_op_shll(Sh2Context *context, unsigned rn)
     return sh2_op_t(context, (value >> 31) != 0);
 }
 
+static inline Sh2StepResult sh2_op_rotl(Sh2Context *context, unsigned rn)
+{
+    Sh2State *state = &context->state;
+    const uint32_t before = state->r[rn];
+    const uint32_t high = before >> 31;
+    state->r[rn] = (before << 1) | high;
+    return sh2_op_t(context, high != 0);
+}
+
 static inline Sh2StepResult sh2_op_rotr(Sh2Context *context, unsigned rn)
 {
     uint32_t value = context->state.r[rn];
