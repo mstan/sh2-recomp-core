@@ -6,11 +6,13 @@
 
 #define SH7604_STANDBY_CONTROL UINT32_C(0xFFFFFE91)
 #define SH7604_CACHE_CONTROL UINT32_C(0xFFFFFE92)
+#define SH7604_INTERRUPT_PRIORITY_A UINT32_C(0xFFFFFEE2)
 
 enum { SH7604_CACHE_ENABLE = 0x01 };
 
 typedef struct {
     uint8_t standby_control, cache_control;
+    uint16_t interrupt_priority_a;
 } Sh7604System;
 
 typedef enum {

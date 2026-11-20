@@ -37,3 +37,7 @@ add_test(NAME sh7604_frt COMMAND sh7604_frt_test)
 add_executable(sh7604_dmac_test sh7604_dmac_test.c)
 target_link_libraries(sh7604_dmac_test PRIVATE sh2_recomp_core)
 add_test(NAME sh7604_dmac COMMAND sh7604_dmac_test)
+
+add_executable(sh7604_divu_test sh7604_divu_test.c)
+target_link_libraries(sh7604_divu_test PRIVATE sh2-recomp-core::core)
+add_test(NAME sh7604_divu COMMAND sh7604_divu_test)

@@ -8,6 +8,10 @@ void sh7604_system_power_on(Sh7604System *system)
 bool sh7604_system_read(const Sh7604System *system, uint32_t address,
                         unsigned size, uint32_t *value)
 {
+    if (address == SH7604_INTERRUPT_PRIORITY_A && size == 2) {
+        *value = system->interrupt_priority_a;
+        return true;
+    }
     if (size != 1)
         return false;
     switch (address) {
@@ -20,6 +24,10 @@ bool sh7604_system_read(const Sh7604System *system, uint32_t address,
 Sh7604SystemWrite sh7604_system_write(Sh7604System *system, uint32_t address,
                                      unsigned size, uint32_t value)
 {
+    if (address == SH7604_INTERRUPT_PRIORITY_A && size == 2) {
+        system->interrupt_priority_a = (uint16_t)(value & 0xfff0);
+        return SH7604_SYSTEM_WRITTEN;
+    }
     if (size != 1)
         return SH7604_SYSTEM_UNMAPPED;
     switch (address) {
