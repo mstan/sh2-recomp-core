@@ -5,7 +5,7 @@
 
 /* One-instruction primitives shared by generated C and the interpreter.
  * The decoder supplies in-range register indices and aligned widths. */
-enum { SH2_SR_T = 1, SH2_SR_Q = 0x100, SH2_SR_M = 0x200, SH2_SR_BITS = 0x3F3 };
+enum { SH2_SR_T = 1, SH2_SR_S = 2, SH2_SR_Q = 0x100, SH2_SR_M = 0x200, SH2_SR_BITS = 0x3F3 };
 
 static inline Sh2StepResult sh2_retire(Sh2Context *context, unsigned cycles)
 {
@@ -104,6 +104,12 @@ static inline Sh2StepResult sh2_op_shar(Sh2Context *context, unsigned rn)
     uint32_t value = context->state.r[rn];
     context->state.r[rn] = (value >> 1) | (value & UINT32_C(0x80000000));
     return sh2_op_t(context, (value & 1) != 0);
+}
+
+static inline Sh2StepResult sh2_op_clrmac(Sh2Context *context)
+{
+    context->state.mach = context->state.macl = 0;
+    return sh2_retire(context, 1);
 }
 
 static inline Sh2StepResult sh2_op_muls_w(Sh2Context *context, unsigned rn, unsigned rm)
@@ -216,6 +222,7 @@ Sh2StepResult sh2_op_lds_l_pr(Sh2Context *context, unsigned rm);
 Sh2StepResult sh2_op_sts_l(Sh2Context *context, unsigned rn, uint32_t value);
 Sh2StepResult sh2_op_lds_l(Sh2Context *context, unsigned rm, uint32_t *destination);
 Sh2StepResult sh2_op_rte(Sh2Context *context);
+Sh2StepResult sh2_op_mac_w(Sh2Context *context, unsigned rn, unsigned rm);
 Sh2StepResult sh2_op_load_postinc(Sh2Context *context, unsigned rn, unsigned rm, unsigned size);
 Sh2StepResult sh2_op_load(Sh2Context *context, unsigned rn, uint32_t address, unsigned size);
 Sh2StepResult sh2_op_store(Sh2Context *context, uint32_t address, uint32_t value,

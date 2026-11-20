@@ -15,13 +15,22 @@ typedef struct {
     unsigned fetches;
     bool wait_write;
     uint32_t wait_address;
+    uint32_t wait_read_address;
+    unsigned tracked_reads;
+    uint32_t tracked_address;
 } Memory;
 
 static Sh2BusResult read_data(void *user, uint32_t address, unsigned size, uint32_t *value)
 {
-    const Memory *memory = user;
+    Memory *memory = user;
     if (address > sizeof(memory->bytes) || size > sizeof(memory->bytes) - address)
         return SH2_BUS_FAULT;
+    if (memory->wait_read_address && address == memory->wait_read_address) {
+        memory->wait_read_address = 0;
+        return SH2_BUS_WAIT;
+    }
+    if (memory->tracked_address && address == memory->tracked_address)
+        ++memory->tracked_reads;
     *value = 0;
     for (unsigned i = 0; i < size; ++i)
         *value = (*value << 8) | memory->bytes[address + i];
@@ -65,6 +74,77 @@ static void start(Sh2Context *context, Memory *memory)
     assert(sh2_power_on(context) == SH2_STEP_OK);
     assert(context->state.pc == 0x10 && context->state.r[15] == 0x3C);
     assert(context->state.sr == 0xF0);
+}
+
+static Sh2StepResult step_fixture(Sh2Context *context, bool fallback)
+{
+    if (!fallback)
+        return sh2_step_native(context, &sh2_catalog_fixture);
+    bool interpreted = false;
+    const Sh2StepResult result = sh2_step_with_fallback(context, NULL, &interpreted);
+    assert(interpreted);
+    return result;
+}
+
+static void test_word_mac(bool fallback)
+{
+    Sh2Context context;
+    Memory memory;
+    start(&context, &memory);
+    Sh2State *state = &context.state;
+    state->pc = 0x130;
+    state->sr = SH2_SR_T;
+    state->mach = state->macl = UINT32_MAX;
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+    assert(state->mach == 0 && state->macl == 0 && state->sr == SH2_SR_T);
+
+    assert(write_data(&memory, 0x138, 2, 0xfffd) == SH2_BUS_OK);
+    assert(write_data(&memory, 0x13a, 2, 2) == SH2_BUS_OK);
+    assert(write_data(&memory, 0x13c, 2, 0xfffc) == SH2_BUS_OK);
+    assert(write_data(&memory, 0x13e, 2, 5) == SH2_BUS_OK);
+    state->r[1] = 0x13a;
+    state->r[2] = 0x138;
+    memory.wait_read_address = 0x13a;
+    memory.tracked_address = 0x138;
+    assert(step_fixture(&context, fallback) == SH2_STEP_WAIT);
+    assert(state->pc == 0x132 && state->cycles == 1);
+    assert(state->r[1] == 0x13a && state->r[2] == 0x138 && state->macl == 0);
+    assert(!sh2_interrupt_ready(&context, 6) && memory.tracked_reads == 1);
+    assert(write_data(&memory, 0x138, 2, 1) == SH2_BUS_OK);
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+    assert(memory.fetches == 2 && memory.tracked_reads == 1 && sh2_interrupt_ready(&context, 6));
+    assert(state->r[1] == 0x13c && state->r[2] == 0x13a && state->cycles == 4);
+    assert(state->mach == UINT32_MAX && state->macl == UINT32_C(0xfffffffa));
+
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+    assert(state->r[1] == 0x140 && state->mach == UINT32_MAX);
+    assert(state->macl == UINT32_C(0xffffffe6));
+
+    state->pc = 0x132;
+    state->sr |= SH2_SR_S;
+    state->mach = UINT32_C(0x02713568);
+    state->macl = UINT32_C(0x7ffffffe);
+    state->r[1] = 0x13a;
+    state->r[2] = 0x13e;
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+    assert(state->macl == INT32_MAX && state->mach == UINT32_C(0x02713568));
+
+    state->pc = 0x132;
+    state->macl = UINT32_C(0x80000001);
+    state->r[1] = 0x13a;
+    state->r[2] = 0x13c;
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+    assert(state->macl == UINT32_C(0x80000000) && state->mach == UINT32_C(0x02713568));
+
+    state->pc = 0x132;
+    state->sr &= ~(uint32_t)SH2_SR_S;
+    state->mach = UINT32_MAX;
+    state->macl = UINT32_C(0xfffffffe);
+    state->r[1] = 0x13a;
+    state->r[2] = 0x138;
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+    assert(state->mach == 0 && state->macl == 0);
+    assert(state->cycles == 16 && state->sr == SH2_SR_T);
 }
 
 int main(void)
@@ -420,5 +500,7 @@ int main(void)
         assert((native.state.sr & SH2_SR_T) == (step < 2));
     }
     assert(native.state.pc == 0x130 && native.state.cycles == start_cycles + 21);
+    test_word_mac(false);
+    test_word_mac(true);
     return 0;
 }

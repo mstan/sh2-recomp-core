@@ -40,6 +40,7 @@ Sh2StepResult sh2_power_on(Sh2Context *context)
     next.sr = 0xF0;
     context->state = next;
     context->interrupt_stage = 0;
+    context->mac_word_opcode = 0;
     return SH2_STEP_OK;
 }
 
@@ -48,6 +49,13 @@ Sh2StepResult sh2_fetch16(Sh2Context *context, uint16_t *word)
     const uint32_t pc = context->state.pc;
     if (pc & 1)
         return SH2_STEP_ADDRESS_ERROR;
+    if (context->mac_word_opcode) {
+        if (context->mac_word_pc == pc) {
+            *word = context->mac_word_opcode;
+            return SH2_STEP_OK;
+        }
+        context->mac_word_opcode = 0;
+    }
     if (!context->bus.fetch16)
         return SH2_STEP_BUS_FAULT;
     return bus_result(context->bus.fetch16(context->user, pc, word));
@@ -119,6 +127,58 @@ Sh2StepResult sh2_op_mov_l_postinc(Sh2Context *context, unsigned rn, unsigned rm
     return sh2_op_load_postinc(context, rn, rm, 4);
 }
 
+static int64_t signed_operand(uint32_t value, uint32_t sign_bit)
+{
+    return (int64_t)(value ^ sign_bit) - sign_bit;
+}
+
+Sh2StepResult sh2_op_mac_w(Sh2Context *context, unsigned rn, unsigned rm)
+{
+    Sh2State *state = &context->state;
+    const uint16_t opcode = (uint16_t)(0x400fu | (rn << 8) | (rm << 4));
+    uint32_t first = context->mac_word_first_operand;
+    if (context->mac_word_opcode != opcode || context->mac_word_pc != state->pc) {
+        context->mac_word_opcode = 0;
+        const Sh2StepResult result = read_data(context, state->r[rn], 2, &first);
+        if (result != SH2_STEP_OK)
+            return result;
+    }
+
+    /* The second read sees the first post-increment when the registers alias.
+     * Retain the first bus transaction if the second device has to wait. */
+    uint32_t second;
+    const uint32_t address = state->r[rm] + (rn == rm ? 2u : 0u);
+    const Sh2StepResult result = read_data(context, address, 2, &second);
+    if (result == SH2_STEP_WAIT) {
+        context->mac_word_pc = state->pc;
+        context->mac_word_opcode = opcode;
+        context->mac_word_first_operand = (uint16_t)first;
+        return result;
+    }
+    context->mac_word_opcode = 0;
+    if (result != SH2_STEP_OK)
+        return result;
+
+    state->r[rn] += 2;
+    state->r[rm] += 2;
+    const int64_t product = signed_operand((uint16_t)first, 0x8000) *
+                            signed_operand((uint16_t)second, 0x8000);
+    if (state->sr & SH2_SR_S) {
+        int64_t sum = signed_operand(state->macl, UINT32_C(0x80000000)) + product;
+        if (sum > INT32_MAX)
+            sum = INT32_MAX;
+        else if (sum < INT32_MIN)
+            sum = INT32_MIN;
+        state->macl = (uint32_t)sum;
+    } else {
+        const uint64_t accumulator = ((uint64_t)state->mach << 32) | state->macl;
+        const uint64_t sum = accumulator + (uint64_t)product;
+        state->mach = (uint32_t)(sum >> 32);
+        state->macl = (uint32_t)sum;
+    }
+    return sh2_retire(context, 3);
+}
+
 Sh2StepResult sh2_op_lds_l(Sh2Context *context, unsigned rm, uint32_t *destination)
 {
     uint32_t value;
@@ -185,7 +245,7 @@ bool sh2_interrupt_ready(const Sh2Context *context, unsigned level)
     const Sh2State *state = &context->state;
     return context->interrupt_stage ||
            (level > ((state->sr >> 4) & 15) && level <= 15 &&
-            !state->delay_pending && !state->irq_inhibit);
+            !state->delay_pending && !state->irq_inhibit && !context->mac_word_opcode);
 }
 
 Sh2StepResult sh2_interrupt(Sh2Context *context, unsigned level, uint8_t vector)

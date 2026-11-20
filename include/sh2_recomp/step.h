@@ -42,6 +42,8 @@ typedef struct {
     Sh2Bus bus;
     void *user;
     uint8_t interrupt_stage, interrupt_level, interrupt_vector;
+    uint32_t mac_word_pc;
+    uint16_t mac_word_opcode, mac_word_first_operand;
 } Sh2Context;
 
 typedef Sh2StepResult (*Sh2NativeOp)(Sh2Context *context);
