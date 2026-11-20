@@ -154,5 +154,13 @@ int main(void)
     assert(native.state.r[4] == 0x8001 && native.state.r[5] == 0);
     assert(native_bus.bytes[0x63] == 0xc0 && native_bus.bytes[0x68] == 0xff);
     assert(native_bus.bytes[0x69] == 0xff && native_bus.bytes[0x6a] == 3 && native_bus.bytes[0x6b] == 0xc0);
+    for (unsigned step = 0; step < 3; ++step) {
+        assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+        assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
+        assert(native.state.r[0] == interpreted.state.r[0]);
+        assert(memcmp(native_bus.bytes, interpreted_bus.bytes, sizeof(native_bus.bytes)) == 0);
+    }
+    assert(native.state.r[0] == UINT32_C(0xffff8003));
+    assert(native_bus.bytes[0x6b] == 3 && native_bus.bytes[0x6c] == 3 && native_bus.bytes[0x6d] == 0xc0);
     return 0;
 }

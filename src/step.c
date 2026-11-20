@@ -111,6 +111,13 @@ Sh2StepResult sh2_op_mov_l_pc(Sh2Context *context, unsigned rn, uint32_t displac
     return sh2_op_load(context, rn, base + displacement, 4);
 }
 
+Sh2StepResult sh2_op_mov_w_pc(Sh2Context *context, unsigned rn, uint32_t displacement)
+{
+    if (context->state.delay_pending)
+        return SH2_STEP_UNSUPPORTED;
+    return sh2_op_load(context, rn, context->state.pc + 4 + displacement, 2);
+}
+
 Sh2StepResult sh2_op_load_postinc(Sh2Context *context, unsigned rn, unsigned rm, unsigned size)
 {
     uint32_t value;

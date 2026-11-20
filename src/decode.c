@@ -7,8 +7,11 @@ typedef enum {
     TARGET_RM,
     DISP8,
     DISP12,
+    LITERAL_WORD,
     LITERAL_LONG,
     RM_RN_DISP_LONG,
+    R0_RN_DISP_BYTE,
+    R0_RN_DISP_WORD,
     DISP_GBR_BYTE,
     DISP_GBR_WORD,
     DISP_GBR_LONG,
@@ -41,9 +44,12 @@ static const Encoding encodings[] = {
     {0xF0FF, 0x402B, SH2_OP_JMP,        TARGET_RM, true},
     {0xF0FF, 0x400B, SH2_OP_JSR,        TARGET_RM, true},
     {0xF000, 0xD000, SH2_OP_MOV_L_PC,   LITERAL_LONG, false},
+    {0xF000, 0x9000, SH2_OP_MOV_W_PC,   LITERAL_WORD, false},
     {0xF00F, 0x6006, SH2_OP_MOV_L_POSTINC, RM_RN, false},
     {0xF00F, 0x6005, SH2_OP_MOV_W_POSTINC, RM_RN, false},
     {0xF000, 0x1000, SH2_OP_MOV_L_STORE_DISP, RM_RN_DISP_LONG, false},
+    {0xFF00, 0x8000, SH2_OP_MOV_B_STORE_R0_DISP, R0_RN_DISP_BYTE, false},
+    {0xFF00, 0x8100, SH2_OP_MOV_W_STORE_R0_DISP, R0_RN_DISP_WORD, false},
     {0xF00F, 0x2000, SH2_OP_MOV_B_STORE, RM_RN, false},
     {0xF00F, 0x2001, SH2_OP_MOV_W_STORE, RM_RN, false},
     {0xF00F, 0x2002, SH2_OP_MOV_L_STORE, RM_RN, false},
@@ -108,14 +114,20 @@ Sh2Instruction sh2_decode(uint16_t word)
         case DISP12:
             decoded.displacement = (int16_t)(2 * sign_extend(word & 0xFFFu, 0x1000));
             break;
+        case LITERAL_WORD:
         case LITERAL_LONG:
             decoded.rn = (uint8_t)((word >> 8) & 15u);
-            decoded.displacement = (int16_t)(4 * (word & 0xFFu));
+            decoded.displacement = (int16_t)((encoding->format == LITERAL_WORD ? 2 : 4) * (word & 0xFFu));
             break;
         case RM_RN_DISP_LONG:
             decoded.rn = (uint8_t)((word >> 8) & 15u);
             decoded.rm = (uint8_t)((word >> 4) & 15u);
             decoded.displacement = (int16_t)(4 * (word & 15u));
+            break;
+        case R0_RN_DISP_BYTE:
+        case R0_RN_DISP_WORD:
+            decoded.rn = (uint8_t)((word >> 4) & 15u);
+            decoded.displacement = (int16_t)((encoding->format == R0_RN_DISP_BYTE ? 1 : 2) * (word & 15u));
             break;
         case DISP_GBR_BYTE:
             decoded.displacement = (int16_t)(word & 0xFFu);
