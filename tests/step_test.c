@@ -521,19 +521,25 @@ int main(void)
         assert(native.state.sr == (SH2_SR_Q | SH2_SR_T) && interpreted.state.sr == native.state.sr);
     }
 
-    native.state.pr = 0x40;
-    interpreted.state = native.state;
-    assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
-    assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
-    assert(native.state.delay_pending && interpreted.state.delay_pending);
-    assert(native.state.pc == 0x13c && interpreted.state.pc == 0x13c);
-    assert(native.state.sr == (SH2_SR_Q | SH2_SR_T));
-    const uint64_t delay_slot_start = native.state.cycles;
-    assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
-    assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
-    assert(!native.state.delay_pending && !interpreted.state.delay_pending);
-    assert(native.state.pc == 0x40 && interpreted.state.pc == 0x40);
-    assert(native.state.sr == SH2_SR_Q && interpreted.state.sr == SH2_SR_Q);
-    assert(native.state.cycles == delay_slot_start + 1 && interpreted.state.cycles == native.state.cycles);
+    for (unsigned set = 0; set <= 1; ++set) {
+        native.state.pc = 0x13a + set * 4;
+        native.state.pr = 0x40;
+        const uint32_t before = SH2_SR_Q | (set ? 0 : SH2_SR_T);
+        const uint32_t after = SH2_SR_Q | (set ? SH2_SR_T : 0);
+        native.state.sr = before;
+        interpreted.state = native.state;
+        assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+        assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
+        assert(native.state.delay_pending && interpreted.state.delay_pending);
+        assert(native.state.pc == 0x13c + set * 4 && interpreted.state.pc == native.state.pc);
+        assert(native.state.sr == before && interpreted.state.sr == before);
+        const uint64_t delay_slot_start = native.state.cycles;
+        assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+        assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
+        assert(!native.state.delay_pending && !interpreted.state.delay_pending);
+        assert(native.state.pc == 0x40 && interpreted.state.pc == 0x40);
+        assert(native.state.sr == after && interpreted.state.sr == after);
+        assert(native.state.cycles == delay_slot_start + 1 && interpreted.state.cycles == native.state.cycles);
+    }
     return 0;
 }
