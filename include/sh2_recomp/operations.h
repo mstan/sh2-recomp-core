@@ -58,6 +58,13 @@ static inline Sh2StepResult sh2_op_shll(Sh2Context *context, unsigned rn)
     return sh2_op_t(context, (value >> 31) != 0);
 }
 
+static inline Sh2StepResult sh2_op_rotr(Sh2Context *context, unsigned rn)
+{
+    uint32_t value = context->state.r[rn];
+    context->state.r[rn] = (value >> 1) | (value << 31);
+    return sh2_op_t(context, (value & 1) != 0);
+}
+
 static inline Sh2StepResult sh2_op_dt(Sh2Context *context, unsigned rn)
 {
     return sh2_op_t(context, --context->state.r[rn] == 0);
@@ -100,6 +107,8 @@ Sh2StepResult sh2_op_mov_w_pc(Sh2Context *context, unsigned rn, uint32_t displac
 Sh2StepResult sh2_op_mov_l_postinc(Sh2Context *context, unsigned rn, unsigned rm);
 Sh2StepResult sh2_op_sts_l_pr(Sh2Context *context, unsigned rn);
 Sh2StepResult sh2_op_lds_l_pr(Sh2Context *context, unsigned rm);
+Sh2StepResult sh2_op_sts_l(Sh2Context *context, unsigned rn, uint32_t value);
+Sh2StepResult sh2_op_lds_l(Sh2Context *context, unsigned rm, uint32_t *destination);
 Sh2StepResult sh2_op_rte(Sh2Context *context);
 Sh2StepResult sh2_op_load_postinc(Sh2Context *context, unsigned rn, unsigned rm, unsigned size);
 Sh2StepResult sh2_op_load(Sh2Context *context, unsigned rn, uint32_t address, unsigned size);

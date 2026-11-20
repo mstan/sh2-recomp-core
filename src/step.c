@@ -130,14 +130,19 @@ Sh2StepResult sh2_op_mov_l_postinc(Sh2Context *context, unsigned rn, unsigned rm
     return sh2_op_load_postinc(context, rn, rm, 4);
 }
 
-Sh2StepResult sh2_op_lds_l_pr(Sh2Context *context, unsigned rm)
+Sh2StepResult sh2_op_lds_l(Sh2Context *context, unsigned rm, uint32_t *destination)
 {
     uint32_t value;
     Sh2StepResult result = read_data(context, context->state.r[rm], 4, &value);
     if (result != SH2_STEP_OK)
         return result;
     context->state.r[rm] += 4;
-    return sh2_op_control(context, &context->state.pr, value);
+    return sh2_op_control(context, destination, value);
+}
+
+Sh2StepResult sh2_op_lds_l_pr(Sh2Context *context, unsigned rm)
+{
+    return sh2_op_lds_l(context, rm, &context->state.pr);
 }
 
 static Sh2StepResult write_data(Sh2Context *context, uint32_t address, unsigned size,
@@ -173,12 +178,17 @@ Sh2StepResult sh2_op_store_predec(Sh2Context *context, unsigned rn, unsigned rm,
     return store_predec(context, rn, context->state.r[rm], size);
 }
 
-Sh2StepResult sh2_op_sts_l_pr(Sh2Context *context, unsigned rn)
+Sh2StepResult sh2_op_sts_l(Sh2Context *context, unsigned rn, uint32_t value)
 {
-    Sh2StepResult result = store_predec(context, rn, context->state.pr, 4);
+    Sh2StepResult result = store_predec(context, rn, value, 4);
     if (result == SH2_STEP_OK)
         context->state.irq_inhibit = true;
     return result;
+}
+
+Sh2StepResult sh2_op_sts_l_pr(Sh2Context *context, unsigned rn)
+{
+    return sh2_op_sts_l(context, rn, context->state.pr);
 }
 
 bool sh2_interrupt_ready(const Sh2Context *context, unsigned level)
