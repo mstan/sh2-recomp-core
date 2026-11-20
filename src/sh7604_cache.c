@@ -12,6 +12,19 @@ void sh7604_cache_purge(Sh7604Cache *cache)
     }
 }
 
+bool sh7604_cache_purge_write(Sh7604Cache *cache, uint32_t address, unsigned size)
+{
+    const uint32_t physical = address - UINT32_C(0x40000000);
+    if (physical >= UINT32_C(0x08000000) || size != 4 || (address & 3))
+        return false;
+    Sh7604CacheSet *set = &cache->set[(physical >> 4) & 63];
+    const uint32_t tag = physical >> 10;
+    for (unsigned way = 0; way < 4; ++way)
+        if (set->tag[way] == tag)
+            set->valid &= (uint8_t)~(1u << way);
+    return true;
+}
+
 static unsigned match(const Sh7604CacheSet *set, uint32_t address, bool two_way)
 {
     uint32_t tag = address >> 10;

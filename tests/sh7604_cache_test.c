@@ -43,6 +43,17 @@ int main(void)
     assert(!sh7604_cache_read(&cache, &control, 0x400, 1, false, NULL, &value));
     assert(sh7604_cache_read(&cache, &control, 0, 1, true, NULL, &value) && value == 0x55);
 
+    const uint8_t lru = cache.set[0].lru;
+    assert(!sh7604_cache_purge_write(&cache, 0x40000000u, 2));
+    assert(!sh7604_cache_purge_write(&cache, 0x40000002u, 4));
+    assert(!sh7604_cache_purge_write(&cache, 0x48000000u, 4));
+    assert(sh7604_cache_purge_write(&cache, 0x40000400u, 4));
+    assert(sh7604_cache_purge_write(&cache, 0x40000004u, 4));
+    assert(cache.set[0].lru == lru);
+    assert(!sh7604_cache_read(&cache, &control, 0, 1, true, NULL, &value));
+    assert(sh7604_cache_read(&cache, &control, 0x800, 1, true, NULL, &value));
+    assert(sh7604_cache_array_read(&cache, 0xc0000c00u, 1, &value) && value == 0x55);
+
     sh7604_cache_purge(&cache);
     control.cache_control = 0x09;
     for (unsigned i = 0; i < 3; ++i)

@@ -21,6 +21,10 @@ extern "C" {
 
 void sh7604_cache_purge(Sh7604Cache *cache);
 
+/* A longword write to the associative purge area invalidates the addressed
+ * line, if present. A handled write consumes two cycles. */
+bool sh7604_cache_purge_write(Sh7604Cache *cache, uint32_t address, unsigned size);
+
 /* Use only for ordinary memory in the cacheable address space. `backing`
  * is the complete, side-effect-free external cache line, or NULL if the
  * caller cannot safely fill the line. False means use the external bus. */
