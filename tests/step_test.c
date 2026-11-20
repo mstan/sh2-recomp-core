@@ -502,5 +502,23 @@ int main(void)
     assert(native.state.pc == 0x130 && native.state.cycles == start_cycles + 21);
     test_word_mac(false);
     test_word_mac(true);
+
+    native.state.pc = 0x136;
+    native.state.r[0] = UINT32_C(0x89abcdef);
+    native.state.r[3] = UINT32_C(0x01234567);
+    native.state.sr = SH2_SR_Q | SH2_SR_T;
+    interpreted.state = native.state;
+    const uint64_t extraction_start = native.state.cycles;
+    static const uint32_t extracted[] = {0x456789ab, 0x89ab4567};
+    for (unsigned step = 0; step < sizeof extracted / sizeof extracted[0]; ++step) {
+        assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+        assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
+        assert(memcmp(native.state.r, interpreted.state.r, sizeof(native.state.r)) == 0);
+        assert(native.state.r[0] == extracted[step] && native.state.r[3] == UINT32_C(0x01234567));
+        assert(native.state.pc == 0x138 + step * 2 && interpreted.state.pc == native.state.pc);
+        assert(native.state.cycles == extraction_start + step + 1);
+        assert(interpreted.state.cycles == native.state.cycles);
+        assert(native.state.sr == (SH2_SR_Q | SH2_SR_T) && interpreted.state.sr == native.state.sr);
+    }
     return 0;
 }

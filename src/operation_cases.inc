@@ -33,6 +33,7 @@ SH2_OPERATION(EXTS_B, sh2_op_register(context, rn, sh2_extend_signed(state->r[rm
 SH2_OPERATION(EXTS_W, sh2_op_register(context, rn, sh2_extend_signed(state->r[rm], 2)))
 SH2_OPERATION(SWAP_B, sh2_op_register(context, rn, (state->r[rm] & 0xffff0000u) | ((state->r[rm] & 0xffu) << 8) | ((state->r[rm] >> 8) & 0xffu)))
 SH2_OPERATION(SWAP_W, sh2_op_register(context, rn, (state->r[rm] << 16) | (state->r[rm] >> 16)))
+SH2_OPERATION(XTRCT, sh2_op_register(context, rn, (state->r[rm] << 16) | (state->r[rn] >> 16)))
 SH2_OPERATION(SHLL, sh2_op_shll(context, rm))
 SH2_OPERATION(SHLR, sh2_op_shlr(context, rm))
 SH2_OPERATION(SHLR2, sh2_op_register(context, rm, state->r[rm] >> 2))
