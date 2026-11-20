@@ -109,6 +109,7 @@ static const Encoding encodings[] = {
     {0xF00F, 0x200F, SH2_OP_MULS_W,     RM_RN, false},
     {0xF00F, 0x200E, SH2_OP_MULU_W,     RM_RN, false},
     {0xF00F, 0x400F, SH2_OP_MAC_W,      RM_RN, false},
+    {0xF00F, 0x000F, SH2_OP_MAC_L,      RM_RN, false},
     {0xF00F, 0x2007, SH2_OP_DIV0S,      RM_RN, false},
     {0xF00F, 0x3004, SH2_OP_DIV1,       RM_RN, false},
     {0xF00F, 0x3002, SH2_OP_CMP_HS,     RM_RN, false},

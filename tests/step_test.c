@@ -147,6 +147,55 @@ static void test_word_mac(bool fallback)
     assert(state->cycles == 16 && state->sr == SH2_SR_T);
 }
 
+static void test_long_mac(bool fallback)
+{
+    Sh2Context context;
+    Memory memory;
+    start(&context, &memory);
+    Sh2State *state = &context.state;
+    state->pc = 0x14a;
+    state->sr = SH2_SR_T;
+    state->r[0] = 0x100;
+    state->r[11] = 0x104;
+    assert(write_data(&memory, 0x100, 4, UINT32_C(0x80001234)) == SH2_BUS_OK);
+    assert(write_data(&memory, 0x104, 4, 2) == SH2_BUS_OK);
+    memory.wait_read_address = 0x104;
+    memory.tracked_address = 0x100;
+    assert(step_fixture(&context, fallback) == SH2_STEP_WAIT);
+    assert(state->pc == 0x14a && state->cycles == 0 && !sh2_interrupt_ready(&context, 6));
+    assert(state->r[0] == 0x100 && state->r[11] == 0x104 && state->mach == 0 && state->macl == 0);
+    assert(write_data(&memory, 0x100, 4, 0) == SH2_BUS_OK);
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+    assert(state->r[0] == 0x104 && state->r[11] == 0x108 && state->cycles == 3);
+    assert(state->mach == UINT32_MAX && state->macl == 0x2468 && state->sr == SH2_SR_T);
+    assert(memory.tracked_reads == 1 && memory.fetches == 1 && sh2_interrupt_ready(&context, 6));
+
+    assert(write_data(&memory, 0x108, 4, 3) == SH2_BUS_OK);
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+    assert(state->r[0] == 0x10c && state->mach == UINT32_MAX && state->macl == 0x246e && state->cycles == 6);
+
+    static const struct {
+        uint32_t input_high, input_low, left, right, expected_high, expected_low;
+    } sums[] = {
+        {0x7fff, UINT32_MAX - 1, 2, 3, 0x7fff, UINT32_MAX},
+        {0xffff8000, 1, 2, UINT32_MAX - 2, 0xffff8000, 0},
+        {UINT32_MAX, UINT32_MAX - 9, 1, 2, UINT32_MAX, UINT32_MAX - 7},
+    };
+    state->sr |= SH2_SR_S;
+    for (unsigned i = 0; i < sizeof sums / sizeof sums[0]; ++i) {
+        state->pc = 0x14a;
+        state->r[0] = 0x100;
+        state->r[11] = 0x104;
+        state->mach = sums[i].input_high;
+        state->macl = sums[i].input_low;
+        assert(write_data(&memory, 0x100, 4, sums[i].left) == SH2_BUS_OK);
+        assert(write_data(&memory, 0x104, 4, sums[i].right) == SH2_BUS_OK);
+        assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+        assert(state->mach == sums[i].expected_high && state->macl == sums[i].expected_low);
+        assert(state->sr == (SH2_SR_S | SH2_SR_T));
+    }
+}
+
 int main(void)
 {
     Sh2Context native, interpreted;
@@ -502,6 +551,8 @@ int main(void)
     assert(native.state.pc == 0x130 && native.state.cycles == start_cycles + 21);
     test_word_mac(false);
     test_word_mac(true);
+    test_long_mac(false);
+    test_long_mac(true);
 
     native.state.pc = 0x136;
     native.state.r[0] = UINT32_C(0x89abcdef);

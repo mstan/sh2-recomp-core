@@ -108,7 +108,9 @@ static const uint8_t boot_image[] = {
     [0x142] = 0x60, 0x37, /* not r3,r0 */
     0x60, 0x07,          /* not r0,r0 */
     [0x146] = 0x38, 0x3d, /* dmuls.l r3,r8 */
-    0x38, 0x35           /* dmulu.l r3,r8 */
+    0x38, 0x35,          /* dmulu.l r3,r8 */
+    [0x14a] = 0x00, 0xbf, /* mac.l @r11+,@r0+ */
+    0x00, 0x0f           /* mac.l @r0+,@r0+ */
 };
 
 #endif

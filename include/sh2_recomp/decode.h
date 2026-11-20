@@ -122,7 +122,8 @@ typedef enum {
     SH2_OP_SETT,
     SH2_OP_NOT,
     SH2_OP_DMULS_L,
-    SH2_OP_DMULU_L
+    SH2_OP_DMULU_L,
+    SH2_OP_MAC_L
 } Sh2Opcode;
 
 typedef struct {

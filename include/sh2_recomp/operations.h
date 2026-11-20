@@ -243,7 +243,12 @@ Sh2StepResult sh2_op_lds_l_pr(Sh2Context *context, unsigned rm);
 Sh2StepResult sh2_op_sts_l(Sh2Context *context, unsigned rn, uint32_t value);
 Sh2StepResult sh2_op_lds_l(Sh2Context *context, unsigned rm, uint32_t *destination);
 Sh2StepResult sh2_op_rte(Sh2Context *context);
-Sh2StepResult sh2_op_mac_w(Sh2Context *context, unsigned rn, unsigned rm);
+Sh2StepResult sh2_op_mac(Sh2Context *context, unsigned rn, unsigned rm, unsigned size);
+
+static inline Sh2StepResult sh2_op_mac_w(Sh2Context *context, unsigned rn, unsigned rm)
+{
+    return sh2_op_mac(context, rn, rm, 2);
+}
 Sh2StepResult sh2_op_load_postinc(Sh2Context *context, unsigned rn, unsigned rm, unsigned size);
 Sh2StepResult sh2_op_load(Sh2Context *context, unsigned rn, uint32_t address, unsigned size);
 Sh2StepResult sh2_op_store(Sh2Context *context, uint32_t address, uint32_t value,

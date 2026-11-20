@@ -52,6 +52,7 @@ int main(void)
         {0x3835, {SH2_OP_DMULU_L, 8, 3, 0, 0, false}},
         {0x0028, {SH2_OP_CLRMAC, 0, 0, 0, 0, false}},
         {0x421F, {SH2_OP_MAC_W, 2, 1, 0, 0, false}},
+        {0x00BF, {SH2_OP_MAC_L, 0, 11, 0, 0, false}},
         {0x0019, {SH2_OP_DIV0U, 0, 0, 0, 0, false}},
         {0x2317, {SH2_OP_DIV0S, 3, 1, 0, 0, false}},
         {0x3344, {SH2_OP_DIV1, 3, 4, 0, 0, false}},
