@@ -33,6 +33,7 @@ static const uint8_t boot_image[192] = {
     [0x80] = 0x01, 0x03, /* bsrf r1 */
     0xc7, 0x01,          /* mova @(4,pc),r0 (delay slot) */
     [0x96] = 0x4f, 0x22, /* sts.l pr,@-r15 */
+    0x05, 0x7e,          /* mov.l @(r0,r7),r5 */
     0x63, 0x20,          /* mov.b @r2,r3 */
     0x84, 0x21,          /* mov.b @(1,r2),r0 */
     0xca, 0x21,          /* xor #0x21,r0 */
