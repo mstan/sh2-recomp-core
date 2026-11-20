@@ -47,6 +47,22 @@ static bool fits(unsigned offset, unsigned size)
     return (size == 1 || size == 2 || size == 4) && offset + size <= SH7604_CACHE_LINE_SIZE;
 }
 
+static uint32_t read_bytes(const uint8_t *bytes, unsigned size)
+{
+    uint32_t value = 0;
+    for (unsigned i = 0; i < size; ++i)
+        value = (value << 8) | bytes[i];
+    return value;
+}
+
+static void write_bytes(uint8_t *bytes, unsigned size, uint32_t value)
+{
+    for (unsigned i = size; i != 0; --i) {
+        bytes[i - 1] = (uint8_t)value;
+        value >>= 8;
+    }
+}
+
 bool sh7604_cache_read(Sh7604Cache *cache, const Sh7604System *system,
                        uint32_t address, unsigned size, bool instruction,
                        const uint8_t *backing, uint32_t *value)
@@ -67,10 +83,7 @@ bool sh7604_cache_read(Sh7604Cache *cache, const Sh7604System *system,
         set->valid |= (uint8_t)(1u << way);
     }
     accessed(set, way);
-    uint32_t val = 0;
-    for (unsigned i = 0; i < size; ++i)
-        val = (val << 8) | set->line[way][offset + i];
-    *value = val;
+    *value = read_bytes(set->line[way] + offset, size);
     return true;
 }
 
@@ -85,9 +98,35 @@ void sh7604_cache_write(Sh7604Cache *cache, const Sh7604System *system,
     unsigned way = match(set, address, (control & CACHE_TWO_WAY) != 0);
     if (way == NO_WAY)
         return;
-    for (unsigned i = size; i != 0; --i) {
-        set->line[way][offset + i - 1] = (uint8_t)value;
-        value >>= 8;
-    }
+    write_bytes(set->line[way] + offset, size, value);
     accessed(set, way);
+}
+
+#define SH7604_CACHE_DATA_BASE UINT32_C(0xc0000000)
+
+static bool array_access(uint32_t offset, unsigned size)
+{
+    return offset < 0x1000 && fits(offset & 15, size) && !(offset & (size - 1));
+}
+
+bool sh7604_cache_array_read(const Sh7604Cache *cache, uint32_t address,
+                             unsigned size, uint32_t *value)
+{
+    const uint32_t offset = address - SH7604_CACHE_DATA_BASE;
+    if (!array_access(offset, size))
+        return false;
+    const Sh7604CacheSet *set = &cache->set[(offset >> 4) & 63];
+    *value = read_bytes(set->line[offset >> 10] + (offset & 15), size);
+    return true;
+}
+
+bool sh7604_cache_array_write(Sh7604Cache *cache, uint32_t address,
+                              unsigned size, uint32_t value)
+{
+    const uint32_t offset = address - SH7604_CACHE_DATA_BASE;
+    if (!array_access(offset, size))
+        return false;
+    Sh7604CacheSet *set = &cache->set[(offset >> 4) & 63];
+    write_bytes(set->line[offset >> 10] + (offset & 15), size, value);
+    return true;
 }

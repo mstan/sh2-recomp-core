@@ -33,6 +33,12 @@ bool sh7604_cache_read(Sh7604Cache *cache, const Sh7604System *system,
 void sh7604_cache_write(Sh7604Cache *cache, const Sh7604System *system,
                         uint32_t address, unsigned size, uint32_t value);
 
+/* Direct way/set access uses the same bytes as automatic cache access. */
+bool sh7604_cache_array_read(const Sh7604Cache *cache, uint32_t address,
+                             unsigned size, uint32_t *value);
+bool sh7604_cache_array_write(Sh7604Cache *cache, uint32_t address,
+                              unsigned size, uint32_t value);
+
 #ifdef __cplusplus
 }
 #endif

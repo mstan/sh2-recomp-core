@@ -21,6 +21,9 @@ int main(void)
     line[0] = 0xab;
     assert(sh7604_cache_read(&cache, &control, 0, 2, true, line, &value));
     assert(value == 0x1234);
+    assert(sh7604_cache_array_read(&cache, 0xc0000c00u, 4, &value) && value == 0x12345678);
+    assert(sh7604_cache_array_write(&cache, 0xc0000c01u, 1, 0x66));
+    assert(sh7604_cache_read(&cache, &control, 0, 2, true, NULL, &value) && value == 0x1266);
     sh7604_cache_write(&cache, &control, 0, 2, 0x5678);
     assert(sh7604_cache_read(&cache, &control, 0, 4, true, NULL, &value));
     assert(value == UINT32_C(0x56785678));
@@ -46,5 +49,12 @@ int main(void)
         assert(sh7604_cache_read(&cache, &control, i * 0x400, 1, false, line, &value));
     assert(cache.set[0].valid == 0x0c);
     assert(!sh7604_cache_read(&cache, &control, 0, 1, false, NULL, &value));
+    assert(sh7604_cache_array_write(&cache, 0xc0000410u, 4, 0x01020304));
+    assert(sh7604_cache_array_read(&cache, 0xc0000412u, 2, &value) && value == 0x0304);
+    assert(cache.set[1].line[1][0] == 1 && cache.set[1].valid == 0);
+    assert(!sh7604_cache_array_read(&cache, 0xc0000411u, 2, &value));
+    assert(!sh7604_cache_array_write(&cache, 0xc0001000u, 1, 0));
+    sh7604_cache_purge(&cache);
+    assert(sh7604_cache_array_read(&cache, 0xc0000410u, 4, &value) && value == 0x01020304);
     return 0;
 }
