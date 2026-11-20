@@ -14,6 +14,7 @@ typedef struct {
     uint8_t bytes[sizeof(boot_image)];
     unsigned fetches;
     bool wait_write;
+    uint32_t wait_address;
 } Memory;
 
 static Sh2BusResult read_data(void *user, uint32_t address, unsigned size, uint32_t *value)
@@ -43,8 +44,9 @@ static Sh2BusResult write_data(void *user, uint32_t address, unsigned size, uint
     Memory *memory = user;
     if (address > sizeof(memory->bytes) || size > sizeof(memory->bytes) - address)
         return SH2_BUS_FAULT;
-    if (memory->wait_write) {
+    if (memory->wait_write || (memory->wait_address && address == memory->wait_address)) {
         memory->wait_write = false;
+        memory->wait_address = 0;
         return SH2_BUS_WAIT;
     }
     for (unsigned i = 0; i < size; ++i) {
@@ -186,5 +188,36 @@ int main(void)
     assert(native.state.r[0] == UINT32_C(0xffffffd1) && native.state.r[3] == UINT32_C(0xffffff81));
     assert(native.state.r[4] == 0x204 && native.state.sr == 0xf0);
     assert(native.state.r[5] == UINT32_C(0x81f00000));
+
+    start(&native, &native_bus);
+    native.state.sr = 0x21;
+    native.state.pc = 0x1e;
+    native.state.vbr = 4;
+    assert(write_data(&native_bus, 4 + 17 * 4, 4, 0xb0) == SH2_BUS_OK);
+    assert(!sh2_interrupt_ready(&native, 2));
+    assert(sh2_interrupt_ready(&native, 3));
+    native_bus.wait_address = 0x34;
+    assert(sh2_interrupt(&native, 3, 17) == SH2_STEP_WAIT);
+    assert(native.state.r[15] == 0x38 && native.state.pc == 0x1e);
+    assert(sh2_interrupt_ready(&native, 0));
+    assert(sh2_interrupt(&native, 0, 0) == SH2_STEP_OK);
+    assert(native.state.r[15] == 0x34 && native.state.pc == 0xb0 && native.state.sr == 0x31);
+    assert(native.state.cycles == 8 && native_bus.bytes[0x37] == 0x1e && native_bus.bytes[0x3b] == 0x21);
+    interpreted.state = native.state;
+    interpreted_bus = native_bus;
+    for (unsigned step = 0; step < 2; ++step) {
+        assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+        assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
+        assert(native.state.pc == interpreted.state.pc && native.state.sr == interpreted.state.sr);
+        assert(sh2_interrupt_ready(&native, 8) == (step != 0));
+    }
+    assert(native.state.pc == 0x1e && native.state.r[15] == 0x3c && native.state.r[1] == 1);
+    assert(native.state.cycles == 13 && native.state.sr == 0x21);
+
+    native.state.pc = 0x12; /* LDC R1,GBR inhibits acceptance at the next boundary. */
+    assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+    assert(!sh2_interrupt_ready(&native, 8));
+    assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+    assert(sh2_interrupt_ready(&native, 8));
     return 0;
 }

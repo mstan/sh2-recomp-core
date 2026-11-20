@@ -2,6 +2,7 @@
  * generator. The operands are already decoded and displacements are bytes. */
 SH2_OPERATION(NOP, sh2_retire(context, 1))
 SH2_OPERATION(RTS, sh2_op_branch(context, state->pr, true, true, false))
+SH2_OPERATION(RTE, sh2_op_rte(context))
 SH2_OPERATION(MOV_IMM, sh2_op_register(context, rn, (uint32_t)immediate))
 SH2_OPERATION(MOV_REG, sh2_op_register(context, rn, state->r[rm]))
 SH2_OPERATION(ADD_IMM, sh2_op_register(context, rn, state->r[rn] + (uint32_t)immediate))

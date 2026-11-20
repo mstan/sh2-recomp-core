@@ -10,6 +10,7 @@ enum { SH2_SR_T = 1, SH2_SR_BITS = 0x3F3 };
 static inline Sh2StepResult sh2_retire(Sh2Context *context, unsigned cycles)
 {
     Sh2State *state = &context->state;
+    state->irq_inhibit = false;
     state->cycles += cycles;
     if (state->delay_pending) {
         state->pc = state->delay_target;
@@ -38,7 +39,9 @@ static inline Sh2StepResult sh2_op_control(Sh2Context *context, uint32_t *contro
                                           uint32_t value)
 {
     *control = value;
-    return sh2_retire(context, 1);
+    sh2_retire(context, 1);
+    context->state.irq_inhibit = true;
+    return SH2_STEP_OK;
 }
 
 static inline Sh2StepResult sh2_op_shlr(Sh2Context *context, unsigned rn)
@@ -64,15 +67,16 @@ static inline Sh2StepResult sh2_op_branch(Sh2Context *context, uint32_t target,
     Sh2State *state = &context->state;
     if (state->delay_pending)
         return SH2_STEP_SLOT_ILLEGAL;
-    if (!taken)
+    if (!taken && !delayed)
         return sh2_retire(context, 1);
+    state->irq_inhibit = false;
     if (link)
         state->pr = state->pc + 4;
     if (delayed) {
-        state->delay_target = target;
+        state->delay_target = taken ? target : state->pc + 4;
         state->delay_pending = true;
         state->pc += 2;
-        state->cycles += 2;
+        state->cycles += taken ? 2 : 1;
     } else {
         state->pc = target;
         state->cycles += 3;
@@ -89,6 +93,7 @@ Sh2StepResult sh2_op_mov_w_pc(Sh2Context *context, unsigned rn, uint32_t displac
 Sh2StepResult sh2_op_mov_l_postinc(Sh2Context *context, unsigned rn, unsigned rm);
 Sh2StepResult sh2_op_sts_l_pr(Sh2Context *context, unsigned rn);
 Sh2StepResult sh2_op_lds_l_pr(Sh2Context *context, unsigned rm);
+Sh2StepResult sh2_op_rte(Sh2Context *context);
 Sh2StepResult sh2_op_load_postinc(Sh2Context *context, unsigned rn, unsigned rm, unsigned size);
 Sh2StepResult sh2_op_load(Sh2Context *context, unsigned rn, uint32_t address, unsigned size);
 Sh2StepResult sh2_op_store(Sh2Context *context, uint32_t address, uint32_t value,

@@ -33,7 +33,7 @@ typedef struct {
     uint32_t r[16];
     uint32_t pc, pr, sr, gbr, vbr, mach, macl;
     uint32_t delay_target;
-    bool delay_pending;
+    bool delay_pending, irq_inhibit;
     uint64_t cycles; /* nominal retired CPU cycles */
 } Sh2State;
 
@@ -41,6 +41,7 @@ typedef struct {
     Sh2State state;
     Sh2Bus bus;
     void *user;
+    uint8_t interrupt_stage, interrupt_level, interrupt_vector;
 } Sh2Context;
 
 typedef Sh2StepResult (*Sh2NativeOp)(Sh2Context *context);
@@ -62,6 +63,9 @@ extern "C" {
 
 void sh2_init(Sh2Context *context, const Sh2Bus *bus, void *user);
 Sh2StepResult sh2_power_on(Sh2Context *context);
+/* Once accepted, resume entry even if the external request has changed. */
+bool sh2_interrupt_ready(const Sh2Context *context, unsigned level);
+Sh2StepResult sh2_interrupt(Sh2Context *context, unsigned level, uint8_t vector);
 Sh2StepResult sh2_fetch16(Sh2Context *context, uint16_t *word);
 Sh2NativeOp sh2_native_lookup(const Sh2Catalog *catalog, uint32_t pc, uint16_t word);
 Sh2StepResult sh2_step_native(Sh2Context *context, const Sh2Catalog *catalog);

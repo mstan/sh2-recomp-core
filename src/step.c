@@ -39,6 +39,7 @@ Sh2StepResult sh2_power_on(Sh2Context *context)
         return result;
     next.sr = 0xF0;
     context->state = next;
+    context->interrupt_stage = 0;
     return SH2_STEP_OK;
 }
 
@@ -139,8 +140,8 @@ Sh2StepResult sh2_op_lds_l_pr(Sh2Context *context, unsigned rm)
     return sh2_op_control(context, &context->state.pr, value);
 }
 
-Sh2StepResult sh2_op_store(Sh2Context *context, uint32_t address, uint32_t value,
-                           unsigned size)
+static Sh2StepResult write_data(Sh2Context *context, uint32_t address, unsigned size,
+                                uint32_t value)
 {
     if (address & (size - 1))
         return SH2_STEP_ADDRESS_ERROR;
@@ -148,7 +149,13 @@ Sh2StepResult sh2_op_store(Sh2Context *context, uint32_t address, uint32_t value
         return SH2_STEP_BUS_FAULT;
     if (size < 4)
         value &= (UINT32_C(1) << (8 * size)) - 1;
-    Sh2StepResult result = bus_result(context->bus.write(context->user, address, size, value));
+    return bus_result(context->bus.write(context->user, address, size, value));
+}
+
+Sh2StepResult sh2_op_store(Sh2Context *context, uint32_t address, uint32_t value,
+                           unsigned size)
+{
+    Sh2StepResult result = write_data(context, address, size, value);
     return result == SH2_STEP_OK ? sh2_retire(context, 1) : result;
 }
 
@@ -168,5 +175,70 @@ Sh2StepResult sh2_op_store_predec(Sh2Context *context, unsigned rn, unsigned rm,
 
 Sh2StepResult sh2_op_sts_l_pr(Sh2Context *context, unsigned rn)
 {
-    return store_predec(context, rn, context->state.pr, 4);
+    Sh2StepResult result = store_predec(context, rn, context->state.pr, 4);
+    if (result == SH2_STEP_OK)
+        context->state.irq_inhibit = true;
+    return result;
+}
+
+bool sh2_interrupt_ready(const Sh2Context *context, unsigned level)
+{
+    const Sh2State *state = &context->state;
+    return context->interrupt_stage ||
+           (level > ((state->sr >> 4) & 15) && level <= 15 &&
+            !state->delay_pending && !state->irq_inhibit);
+}
+
+Sh2StepResult sh2_interrupt(Sh2Context *context, unsigned level, uint8_t vector)
+{
+    Sh2State *state = &context->state;
+    if (!context->interrupt_stage) {
+        if (!sh2_interrupt_ready(context, level))
+            return SH2_STEP_UNSUPPORTED;
+        context->interrupt_stage = 1;
+        context->interrupt_level = (uint8_t)level;
+        context->interrupt_vector = vector;
+    }
+
+    while (context->interrupt_stage <= 2) {
+        uint32_t stack = state->r[15] - 4;
+        uint32_t value = context->interrupt_stage == 1 ? state->sr : state->pc;
+        Sh2StepResult result = write_data(context, stack, 4, value);
+        if (result != SH2_STEP_OK)
+            return result;
+        state->r[15] = stack;
+        ++context->interrupt_stage;
+    }
+
+    uint32_t target;
+    Sh2StepResult result = read_data(context, state->vbr + 4u * context->interrupt_vector,
+                                    4, &target);
+    if (result != SH2_STEP_OK)
+        return result;
+    state->sr = (state->sr & ~UINT32_C(0xf0)) | ((uint32_t)context->interrupt_level << 4);
+    state->pc = target;
+    /* Eight nominal states from acceptance through vector fetch, before bus waits. */
+    state->cycles += 8;
+    context->interrupt_stage = 0;
+    return SH2_STEP_OK;
+}
+
+Sh2StepResult sh2_op_rte(Sh2Context *context)
+{
+    Sh2State *state = &context->state;
+    if (state->delay_pending)
+        return SH2_STEP_SLOT_ILLEGAL;
+
+    uint32_t target, sr;
+    Sh2StepResult result = read_data(context, state->r[15], 4, &target);
+    if (result != SH2_STEP_OK)
+        return result;
+    result = read_data(context, state->r[15] + 4, 4, &sr);
+    if (result != SH2_STEP_OK)
+        return result;
+    state->r[15] += 8;
+    state->sr = sr & SH2_SR_BITS;
+    sh2_op_branch(context, target, true, true, false);
+    state->cycles += 2;
+    return SH2_STEP_OK;
 }

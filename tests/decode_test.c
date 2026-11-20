@@ -62,7 +62,7 @@ int main(void)
         {0x3E58, {SH2_OP_SUB_REG,   14,  5,    0,     0, false}},
         {0xC8FF, {SH2_OP_TST_IMM,    0,  0,  255,     0, false}},
         {0x8880, {SH2_OP_CMP_EQ_IMM, 0,  0, -128,     0, false}},
-        {0x002B, {SH2_OP_UNSUPPORTED,0,  0,    0,     0, false}},
+        {0x002B, {SH2_OP_RTE,       0,  0,    0,     0, true}},
         {0x0109, {SH2_OP_UNSUPPORTED,0,  0,    0,     0, false}},
         {0x3D41, {SH2_OP_UNSUPPORTED,0,  0,    0,     0, false}},
         {0x4E2A, {SH2_OP_UNSUPPORTED,0,  0,    0,     0, false}},
