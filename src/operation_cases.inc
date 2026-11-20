@@ -29,6 +29,7 @@ SH2_OPERATION(OR_IMM, sh2_op_register(context, 0, state->r[0] | (uint32_t)immedi
 SH2_OPERATION(OR_REG, sh2_op_register(context, rn, state->r[rn] | state->r[rm]))
 SH2_OPERATION(XOR_IMM, sh2_op_register(context, 0, state->r[0] ^ (uint32_t)immediate))
 SH2_OPERATION(XOR_REG, sh2_op_register(context, rn, state->r[rn] ^ state->r[rm]))
+SH2_OPERATION(NOT, sh2_op_register(context, rn, ~state->r[rm]))
 SH2_OPERATION(EXTU_W, sh2_op_register(context, rn, state->r[rm] & 0xffffu))
 SH2_OPERATION(EXTU_B, sh2_op_register(context, rn, state->r[rm] & 0xffu))
 SH2_OPERATION(EXTS_B, sh2_op_register(context, rn, sh2_extend_signed(state->r[rm], 1)))

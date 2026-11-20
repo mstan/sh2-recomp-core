@@ -541,5 +541,20 @@ int main(void)
         assert(native.state.sr == after && interpreted.state.sr == after);
         assert(native.state.cycles == delay_slot_start + 1 && interpreted.state.cycles == native.state.cycles);
     }
+    native.state.pc = 0x142;
+    native.state.r[3] = UINT32_C(0x801234fe);
+    native.state.sr = SH2_SR_T | SH2_SR_Q;
+    interpreted.state = native.state;
+    const uint64_t before_not = native.state.cycles;
+    static const uint32_t complements[] = {UINT32_C(0x7fedcb01), UINT32_C(0x801234fe)};
+    for (unsigned step = 0; step < sizeof complements / sizeof complements[0]; ++step) {
+        assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+        assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
+        assert(native.state.r[0] == complements[step] && interpreted.state.r[0] == native.state.r[0]);
+        assert(native.state.r[3] == UINT32_C(0x801234fe));
+        assert(native.state.pc == 0x144 + step * 2 && interpreted.state.pc == native.state.pc);
+        assert(native.state.cycles == before_not + step + 1 && interpreted.state.cycles == native.state.cycles);
+        assert(native.state.sr == (SH2_SR_T | SH2_SR_Q) && interpreted.state.sr == native.state.sr);
+    }
     return 0;
 }

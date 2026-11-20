@@ -105,6 +105,7 @@ static const Encoding encodings[] = {
     {0xF00F, 0x200A, SH2_OP_XOR_REG,    RM_RN, false},
     {0xF00F, 0x200B, SH2_OP_OR_REG,     RM_RN, false},
     {0xF00F, 0x200D, SH2_OP_XTRCT,      RM_RN, false},
+    {0xF00F, 0x6007, SH2_OP_NOT,        RM_RN, false},
     {0xF00F, 0x200F, SH2_OP_MULS_W,     RM_RN, false},
     {0xF00F, 0x200E, SH2_OP_MULU_W,     RM_RN, false},
     {0xF00F, 0x400F, SH2_OP_MAC_W,      RM_RN, false},
