@@ -344,5 +344,21 @@ int main(void)
     assert(native.state.pc == 0x112 && native.state.cycles == start_cycles + 6);
     assert(native.state.r[4] == UINT32_C(0xabc70000) && native.state.mach == 2);
     assert(native.state.macl == UINT32_C(0xfffffffe));
+
+    native.state.r[0] = UINT32_C(0xffff0003);
+    native.state.r[1] = 0x10021;
+    native.state.r[2] = UINT32_C(0x98765432);
+    native.state.r[3] = 0x1004f;
+    interpreted.state = native.state;
+    for (unsigned step = 0; step < 2; ++step) {
+        assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+        assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
+        assert(native.state.pc == interpreted.state.pc && native.state.sr == interpreted.state.sr);
+        assert(memcmp(native.state.r, interpreted.state.r, sizeof(native.state.r)) == 0);
+        assert(memcmp(native_bus.bytes, interpreted_bus.bytes, sizeof(native_bus.bytes)) == 0);
+    }
+    assert(native.state.pc == 0x116 && native.state.cycles == start_cycles + 8);
+    assert(native_bus.bytes[0x24] == 0x32);
+    assert(native_bus.bytes[0x52] == 0x00 && native_bus.bytes[0x53] == 0x21);
     return 0;
 }

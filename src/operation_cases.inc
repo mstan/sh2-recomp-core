@@ -66,6 +66,8 @@ SH2_OPERATION(MOV_W_STORE_R0_DISP, sh2_op_store(context, state->r[rn] + (uint32_
 SH2_OPERATION(MOV_B_STORE, sh2_op_store(context, state->r[rn], state->r[rm], 1))
 SH2_OPERATION(MOV_W_STORE, sh2_op_store(context, state->r[rn], state->r[rm], 2))
 SH2_OPERATION(MOV_L_STORE, sh2_op_store(context, state->r[rn], state->r[rm], 4))
+SH2_OPERATION(MOV_B_STORE_INDEX, sh2_op_store(context, state->r[0] + state->r[rn], state->r[rm], 1))
+SH2_OPERATION(MOV_W_STORE_INDEX, sh2_op_store(context, state->r[0] + state->r[rn], state->r[rm], 2))
 SH2_OPERATION(MOV_L_STORE_INDEX, sh2_op_store(context, state->r[0] + state->r[rn], state->r[rm], 4))
 SH2_OPERATION(MOV_B_PREDEC, sh2_op_store_predec(context, rn, rm, 1))
 SH2_OPERATION(MOV_W_PREDEC, sh2_op_store_predec(context, rn, rm, 2))

@@ -49,6 +49,8 @@ int main(void)
         {0x3344, {SH2_OP_DIV1, 3, 4, 0, 0, false}},
         {0x4D24, {SH2_OP_ROTCL, 0, 13, 0, 0, false}},
         {0x4418, {SH2_OP_SHLL8, 0, 4, 0, 0, false}},
+        {0x0124, {SH2_OP_MOV_B_STORE_INDEX, 1, 2, 0, 0, false}},
+        {0x0315, {SH2_OP_MOV_W_STORE_INDEX, 3, 1, 0, 0, false}},
         {0x0236, {SH2_OP_MOV_L_STORE_INDEX, 2, 3, 0, 0, false}},
         {0x4515, {SH2_OP_CMP_PL, 0, 5, 0, 0, false}},
         {0x001A, {SH2_OP_STS_MACL, 0, 0, 0, 0, false}},

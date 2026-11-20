@@ -101,7 +101,9 @@ typedef enum {
     SH2_OP_CMP_GT,
     SH2_OP_LDS_MACH,
     SH2_OP_SHLL16,
-    SH2_OP_MUL_L
+    SH2_OP_MUL_L,
+    SH2_OP_MOV_B_STORE_INDEX,
+    SH2_OP_MOV_W_STORE_INDEX
 } Sh2Opcode;
 
 typedef struct {

@@ -59,6 +59,8 @@ static const Encoding encodings[] = {
     {0xF00F, 0x2000, SH2_OP_MOV_B_STORE, RM_RN, false},
     {0xF00F, 0x2001, SH2_OP_MOV_W_STORE, RM_RN, false},
     {0xF00F, 0x2002, SH2_OP_MOV_L_STORE, RM_RN, false},
+    {0xF00F, 0x0004, SH2_OP_MOV_B_STORE_INDEX, RM_RN, false},
+    {0xF00F, 0x0005, SH2_OP_MOV_W_STORE_INDEX, RM_RN, false},
     {0xF00F, 0x0006, SH2_OP_MOV_L_STORE_INDEX, RM_RN, false},
     {0xF00F, 0x2004, SH2_OP_MOV_B_PREDEC, RM_RN, false},
     {0xF00F, 0x2005, SH2_OP_MOV_W_PREDEC, RM_RN, false},
