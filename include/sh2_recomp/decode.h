@@ -54,7 +54,8 @@ typedef enum {
     SH2_OP_DT,
     SH2_OP_MOV_W_PC,
     SH2_OP_MOV_B_STORE_R0_DISP,
-    SH2_OP_MOV_W_STORE_R0_DISP
+    SH2_OP_MOV_W_STORE_R0_DISP,
+    SH2_OP_TST_REG
 } Sh2Opcode;
 
 typedef struct {

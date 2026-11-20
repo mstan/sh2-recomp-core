@@ -27,6 +27,7 @@ static const uint8_t boot_image[128] = {
     0x81, 0x72,          /* mov.w r0,@(4,r7) */
     0x90, 0x01,          /* mov.w @(2,pc),r0 */
     0x80, 0x73,          /* mov.b r0,@(3,r7) */
+    0x20, 0x58,          /* tst r5,r0 */
     [0x60] = 0x80, 0x03, 0xfa, 0x01
 };
 
