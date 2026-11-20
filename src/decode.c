@@ -87,6 +87,7 @@ static const Encoding encodings[] = {
     {0xF0FF, 0x0022, SH2_OP_STC_VBR,    TARGET_RM, false},
     {0xF0FF, 0x000A, SH2_OP_STS_MACH,   TARGET_RM, false},
     {0xF0FF, 0x001A, SH2_OP_STS_MACL,   TARGET_RM, false},
+    {0xF0FF, 0x002A, SH2_OP_STS_PR,     TARGET_RM, false},
     {0xF0FF, 0x4022, SH2_OP_STS_L_PR,   TARGET_RM, false},
     {0xF0FF, 0x4026, SH2_OP_LDS_L_PR,   TARGET_RM, false},
     {0xF0FF, 0x4012, SH2_OP_STS_L_MACL, TARGET_RM, false},

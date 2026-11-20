@@ -113,7 +113,8 @@ typedef enum {
     SH2_OP_ROTL,
     SH2_OP_OR_REG,
     SH2_OP_ADDC,
-    SH2_OP_SUBC
+    SH2_OP_SUBC,
+    SH2_OP_STS_PR
 } Sh2Opcode;
 
 typedef struct {
