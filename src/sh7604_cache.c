@@ -143,3 +143,34 @@ bool sh7604_cache_array_write(Sh7604Cache *cache, uint32_t address,
     write_bytes(set->line[offset >> 10] + (offset & 15), size, value);
     return true;
 }
+
+static bool address_array_access(uint32_t address, unsigned size)
+{
+    return (address >> 29) == 3 && size == 4 && !(address & 3);
+}
+
+bool sh7604_cache_address_read(const Sh7604Cache *cache, const Sh7604System *system,
+                               uint32_t address, unsigned size, uint32_t *value)
+{
+    if (!address_array_access(address, size))
+        return false;
+    const Sh7604CacheSet *set = &cache->set[(address >> 4) & 63];
+    const unsigned way = system->cache_control >> 6;
+    *value = (set->tag[way] << 10) | ((uint32_t)set->lru << 4) |
+             ((set->valid & (1u << way)) ? 4u : 0u);
+    return true;
+}
+
+bool sh7604_cache_address_write(Sh7604Cache *cache, const Sh7604System *system,
+                                uint32_t address, unsigned size, uint32_t value)
+{
+    if (!address_array_access(address, size))
+        return false;
+    Sh7604CacheSet *set = &cache->set[(address >> 4) & 63];
+    const unsigned way = system->cache_control >> 6;
+    const unsigned bit = 1u << way;
+    set->tag[way] = (address >> 10) & 0x7ffff;
+    set->valid = (uint8_t)((set->valid & ~bit) | ((address & 4) ? bit : 0));
+    set->lru = (uint8_t)((value >> 4) & 63);
+    return true;
+}

@@ -41,6 +41,7 @@ Sh2StepResult sh2_power_on(Sh2Context *context)
     context->state = next;
     context->interrupt_stage = 0;
     context->mac_opcode = 0;
+    context->byte_write_opcode = 0;
     return SH2_STEP_OK;
 }
 
@@ -55,6 +56,13 @@ Sh2StepResult sh2_fetch16(Sh2Context *context, uint16_t *word)
             return SH2_STEP_OK;
         }
         context->mac_opcode = 0;
+    }
+    if (context->byte_write_opcode) {
+        if (context->byte_write_pc == pc) {
+            *word = context->byte_write_opcode;
+            return SH2_STEP_OK;
+        }
+        context->byte_write_opcode = 0;
     }
     if (!context->bus.fetch16)
         return SH2_STEP_BUS_FAULT;
@@ -82,6 +90,8 @@ Sh2NativeOp sh2_native_lookup(const Sh2Catalog *catalog, uint32_t pc, uint16_t w
 
 Sh2StepResult sh2_step_native(Sh2Context *context, const Sh2Catalog *catalog)
 {
+    if (context->state.sleeping)
+        return SH2_STEP_WAIT;
     uint16_t word;
     Sh2StepResult result = sh2_fetch16(context, &word);
     if (result != SH2_STEP_OK)
@@ -127,11 +137,6 @@ Sh2StepResult sh2_op_mov_l_postinc(Sh2Context *context, unsigned rn, unsigned rm
     return sh2_op_load_postinc(context, rn, rm, 4);
 }
 
-static int64_t signed_operand(uint32_t value, uint32_t sign_bit)
-{
-    return (int64_t)(value ^ sign_bit) - sign_bit;
-}
-
 Sh2StepResult sh2_op_mac(Sh2Context *context, unsigned rn, unsigned rm, unsigned size)
 {
     Sh2State *state = &context->state;
@@ -162,46 +167,32 @@ Sh2StepResult sh2_op_mac(Sh2Context *context, unsigned rn, unsigned rm, unsigned
 
     state->r[rn] += size;
     state->r[rm] += size;
-    const uint32_t sign = wide ? UINT32_C(0x80000000) : UINT32_C(0x8000);
-    const uint32_t mask = (sign - 1) | sign;
-    const int64_t product = signed_operand(first & mask, sign) * signed_operand(second & mask, sign);
-    if ((state->sr & SH2_SR_S) && !wide) {
-        int64_t sum = signed_operand(state->macl, UINT32_C(0x80000000)) + product;
-        if (sum > INT32_MAX)
-            sum = INT32_MAX;
-        else if (sum < INT32_MIN)
-            sum = INT32_MIN;
-        state->macl = (uint32_t)sum;
-    } else {
-        uint64_t sum;
-        if (state->sr & SH2_SR_S) {
-            const int64_t limit = INT64_C(1) << 47;
-            const int64_t accumulator =
-                signed_operand(state->mach & 0xffffu, 0x8000) * (INT64_C(1) << 32) + state->macl;
-            int64_t saturated = accumulator + product;
-            if (saturated >= limit)
-                saturated = limit - 1;
-            else if (saturated < -limit)
-                saturated = -limit;
-            sum = (uint64_t)saturated;
-        } else {
-            const uint64_t accumulator = ((uint64_t)state->mach << 32) | state->macl;
-            sum = accumulator + (uint64_t)product;
-        }
-        state->mach = (uint32_t)(sum >> 32);
-        state->macl = (uint32_t)sum;
-    }
+    sh2_accumulate_product(&state->mach, &state->macl, state->sr, first, second, size);
     return sh2_retire(context, 3);
 }
 
-Sh2StepResult sh2_op_lds_l(Sh2Context *context, unsigned rm, uint32_t *destination)
+static Sh2StepResult load_control_postinc(Sh2Context *context, unsigned rm, uint32_t *destination,
+                                         uint32_t mask, unsigned cycles)
 {
     uint32_t value;
     Sh2StepResult result = read_data(context, context->state.r[rm], 4, &value);
     if (result != SH2_STEP_OK)
         return result;
     context->state.r[rm] += 4;
-    return sh2_op_control(context, destination, value);
+    *destination = value & mask;
+    sh2_retire(context, cycles);
+    context->state.irq_inhibit = true;
+    return SH2_STEP_OK;
+}
+
+Sh2StepResult sh2_op_lds_l(Sh2Context *context, unsigned rm, uint32_t *destination)
+{
+    return load_control_postinc(context, rm, destination, UINT32_MAX, 1);
+}
+
+Sh2StepResult sh2_op_ldc_l(Sh2Context *context, unsigned rm, uint32_t *destination, uint32_t mask)
+{
+    return load_control_postinc(context, rm, destination, mask, 3);
 }
 
 Sh2StepResult sh2_op_lds_l_pr(Sh2Context *context, unsigned rm)
@@ -228,26 +219,39 @@ Sh2StepResult sh2_op_store(Sh2Context *context, uint32_t address, uint32_t value
     return result == SH2_STEP_OK ? sh2_retire(context, 1) : result;
 }
 
-static Sh2StepResult store_predec(Sh2Context *context, unsigned rn, uint32_t value, unsigned size)
+static Sh2StepResult store_predec(Sh2Context *context, unsigned rn, uint32_t value,
+                                  unsigned size, unsigned cycles)
 {
     const uint32_t address = context->state.r[rn] - size;
-    Sh2StepResult result = sh2_op_store(context, address, value, size);
-    if (result == SH2_STEP_OK)
-        context->state.r[rn] = address;
-    return result;
+    Sh2StepResult result = write_data(context, address, size, value);
+    if (result != SH2_STEP_OK)
+        return result;
+    context->state.r[rn] = address;
+    return sh2_retire(context, cycles);
 }
 
 Sh2StepResult sh2_op_store_predec(Sh2Context *context, unsigned rn, unsigned rm, unsigned size)
 {
-    return store_predec(context, rn, context->state.r[rm], size);
+    return store_predec(context, rn, context->state.r[rm], size, 1);
+}
+
+static Sh2StepResult store_control_predec(Sh2Context *context, unsigned rn, uint32_t value,
+                                         unsigned cycles)
+{
+    Sh2StepResult result = store_predec(context, rn, value, 4, cycles);
+    if (result == SH2_STEP_OK)
+        context->state.irq_inhibit = true;
+    return result;
 }
 
 Sh2StepResult sh2_op_sts_l(Sh2Context *context, unsigned rn, uint32_t value)
 {
-    Sh2StepResult result = store_predec(context, rn, value, 4);
-    if (result == SH2_STEP_OK)
-        context->state.irq_inhibit = true;
-    return result;
+    return store_control_predec(context, rn, value, 1);
+}
+
+Sh2StepResult sh2_op_stc_l(Sh2Context *context, unsigned rn, uint32_t value)
+{
+    return store_control_predec(context, rn, value, 2);
 }
 
 Sh2StepResult sh2_op_sts_l_pr(Sh2Context *context, unsigned rn)
@@ -255,12 +259,69 @@ Sh2StepResult sh2_op_sts_l_pr(Sh2Context *context, unsigned rn)
     return sh2_op_sts_l(context, rn, context->state.pr);
 }
 
+Sh2StepResult sh2_op_test_byte(Sh2Context *context, uint32_t address, uint8_t mask)
+{
+    uint32_t value;
+    Sh2StepResult result = read_data(context, address, 1, &value);
+    if (result != SH2_STEP_OK)
+        return result;
+    Sh2State *state = &context->state;
+    state->sr = (state->sr & ~(uint32_t)SH2_SR_T) | ((value & mask) == 0);
+    return sh2_retire(context, 3);
+}
+
+static Sh2StepResult modify_byte(Sh2Context *context, uint32_t address, uint16_t opcode,
+                                 uint8_t keep, uint8_t toggle, bool test_and_set)
+{
+    const uint32_t pc = context->state.pc;
+    uint32_t input;
+    if (context->byte_write_opcode == opcode && context->byte_write_pc == pc) {
+        address = context->byte_write_address;
+        input = context->byte_write_value;
+    } else {
+        context->byte_write_opcode = 0;
+        const Sh2StepResult result = read_data(context, address, 1, &input);
+        if (result != SH2_STEP_OK)
+            return result;
+    }
+
+    const Sh2StepResult result = write_data(context, address, 1, (input & keep) ^ toggle);
+    if (result == SH2_STEP_WAIT) {
+        /* The read may have had a device side effect. Retry only the write. */
+        context->byte_write_pc = pc;
+        context->byte_write_address = address;
+        context->byte_write_opcode = opcode;
+        context->byte_write_value = (uint8_t)input;
+        return result;
+    }
+    context->byte_write_opcode = 0;
+    if (result != SH2_STEP_OK)
+        return result;
+    if (test_and_set) {
+        Sh2State *state = &context->state;
+        state->sr = (state->sr & ~(uint32_t)SH2_SR_T) | ((uint8_t)input == 0);
+    }
+    return sh2_retire(context, test_and_set ? 4 : 3);
+}
+
+Sh2StepResult sh2_op_modify_byte(Sh2Context *context, uint32_t address, uint16_t opcode,
+                                 uint8_t keep, uint8_t toggle)
+{
+    return modify_byte(context, address, opcode, keep, toggle, false);
+}
+
+Sh2StepResult sh2_op_tas_byte(Sh2Context *context, unsigned rn)
+{
+    return modify_byte(context, context->state.r[rn], (uint16_t)(0x401b | rn << 8), 0x7f, 0x80, true);
+}
+
 bool sh2_interrupt_ready(const Sh2Context *context, unsigned level)
 {
     const Sh2State *state = &context->state;
     return context->interrupt_stage ||
-           (level > ((state->sr >> 4) & 15) && level <= 15 &&
-            !state->delay_pending && !state->irq_inhibit && !context->mac_opcode);
+           (level > ((state->sr >> 4) & 15) && level <= 16 &&
+            !state->delay_pending && !state->irq_inhibit && !context->mac_opcode &&
+            !context->byte_write_opcode);
 }
 
 Sh2StepResult sh2_interrupt(Sh2Context *context, unsigned level, uint8_t vector)
@@ -289,8 +350,10 @@ Sh2StepResult sh2_interrupt(Sh2Context *context, unsigned level, uint8_t vector)
                                     4, &target);
     if (result != SH2_STEP_OK)
         return result;
-    state->sr = (state->sr & ~UINT32_C(0xf0)) | ((uint32_t)context->interrupt_level << 4);
+    const uint32_t mask = context->interrupt_level == 16 ? 15 : context->interrupt_level;
+    state->sr = (state->sr & ~UINT32_C(0xf0)) | (mask << 4);
     state->pc = target;
+    state->sleeping = false;
     /* Eight nominal states from acceptance through vector fetch, before bus waits. */
     state->cycles += 8;
     context->interrupt_stage = 0;

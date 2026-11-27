@@ -67,5 +67,15 @@ int main(void)
     assert(!sh7604_cache_array_write(&cache, 0xc0001000u, 1, 0));
     sh7604_cache_purge(&cache);
     assert(sh7604_cache_array_read(&cache, 0xc0000410u, 4, &value) && value == 0x01020304);
+
+    control.cache_control = 0x41;
+    assert(!sh7604_cache_address_write(&cache, &control, 0x66003414u, 2, 0));
+    assert(sh7604_cache_address_write(&cache, &control, 0x66003414u, 4, 0x210));
+    assert(sh7604_cache_address_read(&cache, &control, 0x60000010u, 4, &value));
+    assert(value == 0x06003614);
+    assert(sh7604_cache_read(&cache, &control, 0x06003410u, 4, true, NULL, &value));
+    assert(value == 0x01020304);
+    assert(sh7604_cache_address_write(&cache, &control, 0x66003410u, 4, 0));
+    assert(!sh7604_cache_read(&cache, &control, 0x06003410u, 4, true, NULL, &value));
     return 0;
 }

@@ -43,6 +43,12 @@ bool sh7604_cache_array_read(const Sh7604Cache *cache, uint32_t address,
 bool sh7604_cache_array_write(Sh7604Cache *cache, uint32_t address,
                               unsigned size, uint32_t value);
 
+/* Longword address-array access uses the way selected by CCR. */
+bool sh7604_cache_address_read(const Sh7604Cache *cache, const Sh7604System *system,
+                               uint32_t address, unsigned size, uint32_t *value);
+bool sh7604_cache_address_write(Sh7604Cache *cache, const Sh7604System *system,
+                                uint32_t address, unsigned size, uint32_t value);
+
 #ifdef __cplusplus
 }
 #endif

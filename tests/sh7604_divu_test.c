@@ -13,13 +13,16 @@ int main(void)
     uint8_t vector;
     unsigned extra;
 
-    assert(!sh7604_divu_read(&divu, base + 0x18, 4, 0, &value, &extra));
+    assert(!sh7604_divu_read(&divu, base + 0x18, 2, 0, &value, &extra));
+    assert(!sh7604_divu_write(&divu, base + 0x1c, 4, 0, 8, &extra));
     assert(!sh7604_divu_write(&divu, base, 2, 0, 8, &extra));
     assert(sh7604_divu_write(&divu, base, 4, 0, 3, &extra) && extra == 0);
     assert(sh7604_divu_read(&divu, base, 4, 1, &value, &extra) && value == 3 && extra == 1);
     assert(sh7604_divu_write(&divu, base + 4, 4, 3, UINT32_C(0xfffffff3), &extra) && extra == 0);
-    assert(sh7604_divu_read(&divu, base + 4, 4, 10, &value, &extra));
+    assert(sh7604_divu_read(&divu, base + 0x1c, 4, 10, &value, &extra));
     assert(value == UINT32_C(0xfffffffc) && extra == 32);
+    assert(sh7604_divu_read(&divu, base + 0x18, 4, 42, &value, &extra));
+    assert(value == UINT32_MAX && extra == 0);
     assert(sh7604_divu_read(&divu, base + 0x10, 4, 43, &value, &extra));
     assert(value == UINT32_MAX && extra == 0);
 

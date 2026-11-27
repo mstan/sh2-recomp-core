@@ -7,6 +7,8 @@ Sh2StepResult sh2_step_with_fallback(Sh2Context *context, const Sh2Catalog *cata
 {
     uint16_t word;
     *used_interpreter = false;
+    if (context->state.sleeping)
+        return SH2_STEP_WAIT;
     Sh2StepResult result = sh2_fetch16(context, &word);
     if (result != SH2_STEP_OK)
         return result;

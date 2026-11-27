@@ -86,6 +86,92 @@ static Sh2StepResult step_fixture(Sh2Context *context, bool fallback)
     return result;
 }
 
+static void test_control_transfers(bool fallback)
+{
+    Sh2Context context;
+    Memory memory;
+    start(&context, &memory);
+    Sh2State *state = &context.state;
+    state->pc = 0x150;
+    state->r[1] = 0x20;
+    state->r[2] = 0x30;
+    assert(write_data(&memory, 0x20, 4, UINT32_C(0xfffffc05)) == SH2_BUS_OK);
+    assert(write_data(&memory, 0x24, 4, UINT32_C(0x25d00000)) == SH2_BUS_OK);
+    assert(write_data(&memory, 0x28, 4, UINT32_C(0x06000000)) == SH2_BUS_OK);
+    memory.wait_read_address = 0x20;
+    assert(step_fixture(&context, fallback) == SH2_STEP_WAIT);
+    assert(state->pc == 0x150 && state->r[1] == 0x20 && state->sr == 0xf0 && state->cycles == 0);
+    for (unsigned i = 0; i < 3; ++i) {
+        assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+        assert(state->cycles == (i + 1) * 3 && state->r[1] == 0x24 + 4 * i);
+        assert(!sh2_interrupt_ready(&context, 15));
+    }
+    assert(state->sr == SH2_SR_T && state->gbr == 0x25d00000 && state->vbr == 0x06000000);
+    memory.wait_address = 0x2c;
+    assert(step_fixture(&context, fallback) == SH2_STEP_WAIT);
+    assert(state->pc == 0x156 && state->r[2] == 0x30 && state->cycles == 9);
+    for (unsigned i = 0; i < 3; ++i) {
+        assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+        assert(state->cycles == 11 + i * 2 && state->r[2] == 0x2c - i * 4);
+    }
+    uint32_t stored;
+    assert(read_data(&memory, 0x2c, 4, &stored) == SH2_BUS_OK && stored == state->vbr);
+    assert(read_data(&memory, 0x28, 4, &stored) == SH2_BUS_OK && stored == state->gbr);
+    assert(read_data(&memory, 0x24, 4, &stored) == SH2_BUS_OK && stored == state->sr);
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK && sh2_interrupt_ready(&context, 15));
+}
+
+static void test_gbr_byte_logic(bool fallback)
+{
+    Sh2Context context;
+    Memory memory;
+    start(&context, &memory);
+    Sh2State *state = &context.state;
+    state->pc = 0x160;
+    state->gbr = 0x20;
+    state->r[0] = 0x16;
+    state->sr = SH2_SR_S;
+    assert(write_data(&memory, 0x36, 1, 0x17) == SH2_BUS_OK);
+    assert(write_data(&memory, 0x26, 2, 0x8076) == SH2_BUS_OK);
+    memory.wait_address = memory.tracked_address = 0x36;
+    assert(step_fixture(&context, fallback) == SH2_STEP_WAIT);
+    assert(memory.tracked_reads == 1 && state->pc == 0x160 && state->cycles == 0);
+    assert(!sh2_interrupt_ready(&context, 6));
+    assert(write_data(&memory, 0x36, 1, 0x40) == SH2_BUS_OK);
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+    assert(memory.tracked_reads == 1 && memory.bytes[0x36] == 0x97 && state->cycles == 3);
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK && memory.bytes[0x36] == 0x93);
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK && memory.bytes[0x36] == 0x10);
+    assert(state->sr == SH2_SR_S);
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK && memory.bytes[0x36] == 0x10);
+    assert(state->sr == (SH2_SR_S | SH2_SR_T) && state->cycles == 12);
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+    assert(state->r[0] == UINT32_C(0xffff8076) && state->cycles == 13);
+}
+
+static void test_test_and_set(bool fallback)
+{
+    Sh2Context context;
+    Memory memory;
+    start(&context, &memory);
+    Sh2State *state = &context.state;
+    state->pc = 0x16e;
+    state->r[3] = 0x36;
+    state->sr = SH2_SR_S;
+    assert(write_data(&memory, 0x36, 1, 0) == SH2_BUS_OK);
+    memory.wait_address = memory.tracked_address = 0x36;
+    assert(step_fixture(&context, fallback) == SH2_STEP_WAIT);
+    assert(memory.tracked_reads == 1 && state->pc == 0x16e && state->sr == SH2_SR_S);
+    assert(!sh2_interrupt_ready(&context, 6));
+    assert(write_data(&memory, 0x36, 1, 0x55) == SH2_BUS_OK);
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+    assert(memory.tracked_reads == 1 && memory.bytes[0x36] == 0x80);
+    assert(state->sr == (SH2_SR_S | SH2_SR_T) && state->cycles == 4);
+    assert(step_fixture(&context, fallback) == SH2_STEP_OK);
+    assert(memory.tracked_reads == 2 && memory.bytes[0x36] == 0x80);
+    assert(state->sr == SH2_SR_S && state->cycles == 8);
+}
+
 static void test_word_mac(bool fallback)
 {
     Sh2Context context;
@@ -553,6 +639,12 @@ int main(void)
     test_word_mac(true);
     test_long_mac(false);
     test_long_mac(true);
+    test_control_transfers(false);
+    test_control_transfers(true);
+    test_gbr_byte_logic(false);
+    test_gbr_byte_logic(true);
+    test_test_and_set(false);
+    test_test_and_set(true);
 
     native.state.pc = 0x136;
     native.state.r[0] = UINT32_C(0x89abcdef);
@@ -632,5 +724,19 @@ int main(void)
         assert(native.state.cycles == before_multiply + 2 && interpreted.state.cycles == native.state.cycles);
         assert(native.state.sr == (SH2_SR_T | SH2_SR_Q) && interpreted.state.sr == native.state.sr);
     }
+    native.state.pc = 0x16a;
+    native.state.r[2] = UINT32_C(0x80000001);
+    native.state.sr = SH2_SR_Q;
+    interpreted.state = native.state;
+    const uint64_t before_rotate = native.state.cycles;
+    assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+    assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
+    assert(native.state.r[2] == UINT32_C(0x40000000) && interpreted.state.r[2] == native.state.r[2]);
+    assert(native.state.sr == (SH2_SR_Q | SH2_SR_T) && interpreted.state.sr == native.state.sr);
+    assert(sh2_step_native(&native, &sh2_catalog_fixture) == SH2_STEP_OK);
+    assert(sh2_step_with_fallback(&interpreted, NULL, &used) == SH2_STEP_OK && used);
+    assert(native.state.r[2] == UINT32_C(0xa0000000) && interpreted.state.r[2] == native.state.r[2]);
+    assert(native.state.sr == SH2_SR_Q && interpreted.state.sr == native.state.sr);
+    assert(native.state.cycles == before_rotate + 2 && interpreted.state.cycles == native.state.cycles);
     return 0;
 }

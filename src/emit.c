@@ -1,5 +1,6 @@
 #include "sh2_recomp/decode.h"
 #include "sh2_recomp/emit.h"
+#include "operation_source.h"
 
 #include <inttypes.h>
 
@@ -10,7 +11,7 @@ static bool identifier_character(unsigned char character)
            (character >= '0' && character <= '9') || character == '_';
 }
 
-static const char *operation_source(Sh2Opcode opcode)
+const char *sh2_operation_source(Sh2Opcode opcode)
 {
     switch (opcode) {
 #define SH2_OPERATION(name, operation) case SH2_OP_##name: return #operation;
@@ -39,7 +40,7 @@ bool sh2_emit_catalog(FILE *out, const char *name, const uint8_t *bytes,
     size_t count = 0;
     for (size_t offset = 0; offset < size; offset += 2) {
         Sh2Instruction decoded = sh2_decode(word_at(bytes, offset));
-        const char *source = operation_source(decoded.opcode);
+        const char *source = sh2_operation_source(decoded.opcode);
         if (!source)
             continue;
 
@@ -63,7 +64,7 @@ bool sh2_emit_catalog(FILE *out, const char *name, const uint8_t *bytes,
     fputs("static const Sh2NativeEntry entries[] = {\n", out);
     for (size_t offset = 0; offset < size; offset += 2) {
         uint16_t word = word_at(bytes, offset);
-        if (!operation_source(sh2_decode(word).opcode))
+        if (!sh2_operation_source(sh2_decode(word).opcode))
             continue;
         const uint32_t pc = base + (uint32_t)offset;
         fprintf(out, "    {0x%08" PRIx32 ", 0x%04x, op_%08" PRIx32 "},\n",

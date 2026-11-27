@@ -9,11 +9,18 @@ consumers supply the bus, firmware and timeline. Each processor has its own
 state and callbacks.
 
 The `sh2-aot` tool emits C operation functions from a big-endian image.
+The same provider also exposes the native-function graph and generation API
+through `sh2_recomp/function.h`, `sh2_recomp/function_graph.h` and
+`sh2-function-aot`. Both generation paths share instruction semantics,
+retirement, guarded memory operations and the SH7604 peripheral models.
+Board adapters keep ownership of their bus, clock domains and interrupt sources.
+
 Strict execution checks the current fetch word at the guest PC before
 calling a generated function. The separately linked interpreter shares the
 instruction semantics and can continue after a catalog miss. Decode misses,
-bus waits and faults are explicit results. Exception delivery, interrupt
-sequencing and the remaining instruction semantics are further bring-up work.
+bus waits and faults are explicit results. Instruction coverage remains the
+implemented subset; unsupported operations are reported explicitly rather
+than silently changing the consumer's execution policy.
 
 The optional SH7604 bus controller models the keyed control registers,
 refresh counter, compare flag and mode-register write window. Board bindings

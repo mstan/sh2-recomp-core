@@ -1,6 +1,6 @@
 #include "sh2_recomp/sh7604_frt.h"
 
-enum { CLEAR_A = 1, OVERFLOW = 2, MATCH_B = 4, MATCH_A = 8, FLAGS = 0x8e };
+enum { CLEAR_A = 1, OVERFLOW = 2, MATCH_B = 4, MATCH_A = 8, CAPTURE = 0x80, FLAGS = 0x8e };
 
 void sh7604_frt_power_on(Sh7604Frt *timer)
 {
@@ -42,6 +42,24 @@ static void advance(Sh7604Frt *timer, uint64_t cycles)
     if (counts >= overflow)
         timer->status |= OVERFLOW;
     timer->counter = (uint16_t)(timer->counter + counts);
+}
+
+void sh7604_frt_capture_pulse(Sh7604Frt *timer, uint64_t cycles)
+{
+    /* The console supplies both edges of the pulse. Either configured edge
+       latches the current counter and asserts the same capture flag. */
+    advance(timer, cycles);
+    timer->capture = timer->counter;
+    timer->status |= CAPTURE;
+    timer->observed_flags &= (uint8_t)~CAPTURE;
+}
+
+unsigned sh7604_frt_interrupt_flags(Sh7604Frt *timer, uint64_t cycles)
+{
+    if (!(timer->enable & FLAGS))
+        return 0;
+    advance(timer, cycles);
+    return timer->enable & timer->status & FLAGS;
 }
 
 bool sh7604_frt_read(Sh7604Frt *timer, uint32_t address, unsigned size,
