@@ -33,7 +33,7 @@ typedef struct {
     uint32_t r[16];
     uint32_t pc, pr, sr, gbr, vbr, mach, macl;
     uint32_t delay_target;
-    bool delay_pending, irq_inhibit;
+    bool delay_pending, irq_inhibit, sleeping;
     uint64_t cycles; /* nominal retired CPU cycles */
 } Sh2State;
 
@@ -45,6 +45,9 @@ typedef struct {
     uint32_t mac_pc;
     uint16_t mac_opcode;
     uint32_t mac_first_operand;
+    uint32_t byte_write_pc, byte_write_address;
+    uint16_t byte_write_opcode;
+    uint8_t byte_write_value; /* Original byte saved for the pending write. */
 } Sh2Context;
 
 typedef Sh2StepResult (*Sh2NativeOp)(Sh2Context *context);

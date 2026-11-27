@@ -2,6 +2,7 @@
 
 enum {
     DVSR = 0, DVDNT = 4, DVCR = 8, VCRDIV = 12, DVDNTH = 16, DVDNTL = 20,
+    DVDNTH_READ_ALIAS = 24, DVDNTL_READ_ALIAS = 28,
     OVERFLOW = 1, OVERFLOW_IRQ = 2, NORMAL_CLOCKS = 39, OVERFLOW_CLOCKS = 6
 };
 
@@ -85,7 +86,10 @@ static void start(Sh7604Divu *divu, uint64_t cycle)
 bool sh7604_divu_read(Sh7604Divu *divu, uint32_t address, unsigned size,
                      uint64_t cycle, uint32_t *value, unsigned *extra_cycles)
 {
-    const uint32_t offset = address - SH7604_DIVU_BASE;
+    uint32_t offset = address - SH7604_DIVU_BASE;
+    /* The SH7604 also exposes both result registers through read-only ports. */
+    if (offset == DVDNTH_READ_ALIAS || offset == DVDNTL_READ_ALIAS)
+        offset -= DVDNTH_READ_ALIAS - DVDNTH;
     if (!mapped(offset, size))
         return false;
     access(divu, cycle, true, extra_cycles);

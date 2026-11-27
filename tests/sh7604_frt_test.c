@@ -61,5 +61,17 @@ int main(void)
     assert(read_register(&timer, 1, 8 * 3) == 5 && timer.counter == 3);
     assert(read_register(&timer, 1, 8 * 4) == 13 && timer.counter == 0);
     assert(read_register(&timer, 1, 8 * 102) == 13 && timer.counter == 2);
+    sh7604_frt_power_on(&timer);
+    write_register(&timer, 0, 0, 0x80);
+    sh7604_frt_capture_pulse(&timer, 16);
+    assert(sh7604_frt_interrupt_flags(&timer, 16) == 0x80);
+    assert(read_register(&timer, 8, 16) == 0 && read_register(&timer, 9, 16) == 2);
+    assert(read_register(&timer, 1, 16) == 0x80);
+    sh7604_frt_capture_pulse(&timer, 24);
+    write_register(&timer, 1, 24, 0);
+    assert(read_register(&timer, 1, 24) == 0x80);
+    assert(read_register(&timer, 8, 24) == 0 && read_register(&timer, 9, 24) == 3);
+    write_register(&timer, 1, 24, 0);
+    assert(sh7604_frt_interrupt_flags(&timer, 24) == 0);
     return 0;
 }

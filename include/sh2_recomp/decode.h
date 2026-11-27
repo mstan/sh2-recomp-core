@@ -9,6 +9,7 @@ typedef enum {
     SH2_OP_NOP,
     SH2_OP_MOV_IMM,
     SH2_OP_MOV_REG,
+    SH2_OP_MOVT,
     SH2_OP_ADD_IMM,
     SH2_OP_ADD_REG,
     SH2_OP_CMP_EQ_REG,
@@ -123,7 +124,24 @@ typedef enum {
     SH2_OP_NOT,
     SH2_OP_DMULS_L,
     SH2_OP_DMULU_L,
-    SH2_OP_MAC_L
+    SH2_OP_MAC_L,
+    SH2_OP_LDC_L_SR,
+    SH2_OP_LDC_L_GBR,
+    SH2_OP_LDC_L_VBR,
+    SH2_OP_STC_L_SR,
+    SH2_OP_STC_L_GBR,
+    SH2_OP_STC_L_VBR,
+    SH2_OP_LDS_MACL,
+    SH2_OP_LDS_L_MACH,
+    SH2_OP_STS_L_MACH,
+    SH2_OP_TST_B_IMM,
+    SH2_OP_AND_B_IMM,
+    SH2_OP_XOR_B_IMM,
+    SH2_OP_OR_B_IMM,
+    SH2_OP_MOV_W_LOAD_GBR,
+    SH2_OP_ROTCR,
+    SH2_OP_TAS_B,
+    SH2_OP_SLEEP
 } Sh2Opcode;
 
 typedef struct {

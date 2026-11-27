@@ -110,7 +110,23 @@ static const uint8_t boot_image[] = {
     [0x146] = 0x38, 0x3d, /* dmuls.l r3,r8 */
     0x38, 0x35,          /* dmulu.l r3,r8 */
     [0x14a] = 0x00, 0xbf, /* mac.l @r11+,@r0+ */
-    0x00, 0x0f           /* mac.l @r0+,@r0+ */
+    0x00, 0x0f,          /* mac.l @r0+,@r0+ */
+    [0x150] = 0x41, 0x07, /* ldc.l @r1+,sr */
+    0x41, 0x17,          /* ldc.l @r1+,gbr */
+    0x41, 0x27,          /* ldc.l @r1+,vbr */
+    0x42, 0x23,          /* stc.l vbr,@-r2 */
+    0x42, 0x13,          /* stc.l gbr,@-r2 */
+    0x42, 0x03,          /* stc.l sr,@-r2 */
+    0x00, 0x09,          /* nop */
+    [0x160] = 0xcf, 0x80, /* or.b #0x80,@(r0,gbr) */
+    0xcd, 0xfb,          /* and.b #0xfb,@(r0,gbr) */
+    0xce, 0x83,          /* xor.b #0x83,@(r0,gbr) */
+    0xcc, 0x80,          /* tst.b #0x80,@(r0,gbr) */
+    0xc5, 0x03,          /* mov.w @(6,gbr),r0 */
+    [0x16a] = 0x42, 0x25, /* rotcr r2 */
+    0x42, 0x25,          /* rotcr r2 */
+    0x43, 0x1b,          /* tas.b @r3 */
+    0x43, 0x1b           /* tas.b @r3 */
 };
 
 #endif

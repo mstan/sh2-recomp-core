@@ -73,5 +73,7 @@ int main(void)
     assert(sh7604_dmac_read(&dma, dmaor, 4, &value) && value == 5);
     assert(sh7604_dmac_write(&dma, dmaor, 4, 1));
     assert(sh7604_dmac_read(&dma, dmaor, 4, &value) && value == 1);
+    assert(sh7604_dmac_write(&dma, dmaor + 8, 4, 0));
+    assert(sh7604_dmac_read(&dma, dmaor, 4, &value) && value == 1);
     return 0;
 }

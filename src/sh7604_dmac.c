@@ -94,6 +94,8 @@ bool sh7604_dmac_write(Sh7604Dmac *dma, uint32_t address, unsigned size, uint32_
                 dma->channels[i].write_pending = false;
         return true;
     }
+    if (address == DMAOR + 8)
+        return true; /* No register is decoded at the reserved longword. */
     return false;
 }
 

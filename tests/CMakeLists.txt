@@ -15,9 +15,13 @@ add_custom_command(OUTPUT "${fixture_catalog}"
     COMMAND sh2_generate_step_fixture "${fixture_catalog}"
     DEPENDS sh2_generate_step_fixture
     VERBATIM)
-add_executable(sh2_step_test step_test.c "${fixture_catalog}")
+add_executable(sh2_step_test EXCLUDE_FROM_ALL step_test.c "${fixture_catalog}")
 target_link_libraries(sh2_step_test PRIVATE sh2-recomp-core::interpreter)
-add_test(NAME sh2_step COMMAND sh2_step_test)
+option(SH2_BUILD_REFERENCE_TESTS "Build explicit reference interpreter comparison" OFF)
+if(SH2_BUILD_REFERENCE_TESTS)
+  set_target_properties(sh2_step_test sh2_interpreter PROPERTIES EXCLUDE_FROM_ALL FALSE)
+  add_test(NAME sh2_step COMMAND sh2_step_test)
+endif()
 
 add_executable(sh7604_bsc_test sh7604_bsc_test.c)
 target_link_libraries(sh7604_bsc_test PRIVATE sh2-recomp-core::core)
@@ -41,3 +45,16 @@ add_test(NAME sh7604_dmac COMMAND sh7604_dmac_test)
 add_executable(sh7604_divu_test sh7604_divu_test.c)
 target_link_libraries(sh7604_divu_test PRIVATE sh2-recomp-core::core)
 add_test(NAME sh7604_divu COMMAND sh7604_divu_test)
+
+add_executable(sh2_native_step_test native_step_test.c "${fixture_catalog}")
+target_link_libraries(sh2_native_step_test PRIVATE sh2-recomp-core::core)
+add_test(NAME sh2_native_step COMMAND sh2_native_step_test)
+
+add_executable(sh2_generate_function generate_function.c)
+target_link_libraries(sh2_generate_function PRIVATE sh2_catalog_emitter)
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/fixture_function.c"
+ COMMAND sh2_generate_function "${CMAKE_CURRENT_BINARY_DIR}/fixture_function.c"
+ DEPENDS sh2_generate_function VERBATIM)
+add_executable(sh2_function_execution function_execution.c "${CMAKE_CURRENT_BINARY_DIR}/fixture_function.c")
+target_link_libraries(sh2_function_execution PRIVATE sh2-recomp-core::core)
+add_test(NAME sh2_function_execution COMMAND sh2_function_execution)
